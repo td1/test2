@@ -45,6 +45,7 @@ videoPath = ofToDataPath("./testpattern.mp4", true);
 videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif    
     
+    loadQR(198); 
     getHomography(boardID);
       
 #ifdef USE_COMMON_HOMOGRAPHY	
@@ -94,8 +95,8 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     calFading();
 #endif        
     
-	omxPlayer.loadMovie(videoPath); 
-	width = omxPlayer.getWidth();
+    omxPlayer.loadMovie(videoPath); 
+    width = omxPlayer.getWidth();
     height = omxPlayer.getHeight();
     printf("MOVIE RESOLUTION = %d x %d, DEFAULT = %d x %d\n", width, height, WIDTH, HEIGHT);
     if (width != WIDTH || height != HEIGHT) {
@@ -113,8 +114,8 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     ofSetFrameRate(30);
 #if 0    
     startPlayVideo = true;
-	omxPlayer.loadMovie(videoPath); 
-	width = omxPlayer.getWidth();
+    omxPlayer.loadMovie(videoPath); 
+    width = omxPlayer.getWidth();
     height = omxPlayer.getHeight();
     printf("MOVIE RESOLUTION = %d x %d, DEFAULT = %d x %d\n", width, height, WIDTH, HEIGHT);
     if (width != WIDTH || height != HEIGHT) {
@@ -156,6 +157,18 @@ void picoApp::draw(){
     unsigned char *pixels = omxPlayer.getPixels();
     nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
    
+    
+#if RESYNC_PROJECT_QR_ENABLE
+    for (i=0; i<height; i++) {             
+        for (j=0; j<width; j++) {    
+            var1 = (i*width + j)*nChannels;
+            for (k=0; k<3; k++) {
+                pixels[var1+k] = qr_frame[(i*width+j)*3+k]; 
+            }
+        }        
+    }
+#endif
+        
 #if ENABLE_BLENDING    
     // calculate fading factors
     // if ((boardID % 2) == 0) { // boardID = 2,4
@@ -2554,6 +2567,19 @@ void *screenShotSyncVideo(void* ptrData)
 }
 
 #define WAIT_FOR_ALL_PICO_SENDING_QR    5 // 30
+
+int picoApp::loadQR(int qrnum)
+{
+    FILE *fp;
+    char *fbp = 0;   
+    char fileToOpen[30];
+    
+    sprintf(fileToOpen, "../../video/qrblob/QR%03d.rgb", qrnum);
+    fp = fopen(fileToOpen, "r");
+    fread(&qr_frame[0], 1, 640*480*3, fp);
+    
+    return 1;
+}
 
 int picoApp::getHomography(int BoardID)
 {
