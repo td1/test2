@@ -25,7 +25,7 @@ extern "C" {
 /* COMPILING SWITCH MODIFICATION */
 //#define HOMOGRAPHY_TRANSFORM_ENABLE     1
 //#define ENABLE_BLENDING                 1
-#define RESYNC_PROJECT_QR_ENABLE          1
+#define RESYNC_ENABLE                     1
 
 /* DEBUG/TEST SWITCH */
 //#define DEBUG_HOMOGRAPHY                1
@@ -117,7 +117,9 @@ public:
         int getHomography(int boardID);
         int loadQR(int qrnum);
                
-	ofTexture pixelOutput;
+	ofVideoGrabber 	qrCapture;
+        ofTexture pixelOutput;
+        
 	bool doUpdatePixels;
         bool startPlayVideo;
         
@@ -157,6 +159,6 @@ public:
         
         float myMatrix[16];
         
-        unsigned char qr_frame[HEIGHT*WIDTH*3];
+        unsigned char qr_frame[230*230*3];
 };
 

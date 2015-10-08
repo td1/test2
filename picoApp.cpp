@@ -2,10 +2,13 @@
 
 void picoApp::setup()
 {
-	ofSetLogLevel(OF_LOG_WARNING);
-	ofSetLogLevel("ofThread", OF_LOG_ERROR);
-	doSaveImage = false;
-	doUpdatePixels = true;
+    // ofSetLogLevel(OF_LOG_WARNING);
+    // ofSetLogLevel("ofThread", OF_LOG_ERROR);
+    ofSetLogLevel(OF_LOG_NOTICE);
+    ofSetLogLevel("ofThread", OF_LOG_NOTICE);
+
+    doSaveImage = false;
+    doUpdatePixels = true;
     startPlayVideo = false;
     
     boardID = myboardID;
@@ -45,7 +48,10 @@ videoPath = ofToDataPath("./testpattern.mp4", true);
 videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif    
     
+#if RESYNC_ENABLE
     loadQR(198); 
+#endif
+    
     getHomography(boardID);
       
 #ifdef USE_COMMON_HOMOGRAPHY	
@@ -110,7 +116,7 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif
 
     ofBackground(0,0,0);
-	consoleListener.setup(this);
+    consoleListener.setup(this);
     ofSetFrameRate(30);
 #if 0    
     startPlayVideo = true;
@@ -123,11 +129,36 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     }
 #endif
     
+#if RESYNC_ENABLE
+    /* setup for qrCapture */
+    vector<ofVideoDevice> devices = qrCapture.listDevices();
+	
+    for(int i = 0; i < devices.size(); i++){
+	cout << devices[i].id << ": " << devices[i].deviceName; 
+        if( devices[i].bAvailable ){
+            cout << endl;
+        } else{
+            cout << " - unavailable " << endl; 
+        }
+    }
+    qrCapture.setDeviceID(0);
+    qrCapture.setDesiredFrameRate(60);
+    qrCapture.initGrabber(320,240);
+    
+    //HUNG videoInverted = new unsigned char[320*240*3];
+    //HUNG videoInverted 	= new unsigned char[camWidth*camHeight*3];
+    //HUNG videoTexture.allocate(camWidth,camHeight, GL_RGB);	
+    ofSetVerticalSync(true);
+#endif
+    
+    if (!pixelOutput.isAllocated()) {
+        pixelOutput.allocate(width, height, GL_RGBA);
+    }
 }
 
 void picoApp::update()
 {
-    if (doSaveImage ) {
+/*    if (doSaveImage ) {
         doSaveImage = false;
         // ofLogVerbose() << " saving image... ";
         omxPlayer.saveImage();
@@ -139,6 +170,26 @@ void picoApp::update()
             pixelOutput.allocate(width, height, GL_RGBA);
         }
     }
+ */
+    
+ 
+#if RESYNC_ENABLE // for test2 only, will change to switch between QR and video frames
+    /* setting for qr capture */
+    ofBackground(100,100,100);
+    qrCapture.update(); 
+    /*
+    if (qrCapture.isFrameNew()){
+	int totalPixels = 320*240*3;
+	unsigned char *pixels = qrCapture.getPixels();
+	for (int i = 0; i < totalPixels; i++){
+            videoInverted[i] = 255 - pixels[i];
+	}
+	videoTexture.loadData(videoInverted, camWidth,camHeight, GL_RGB);
+    }
+     */
+#else
+        omxPlayer.updatePixels();
+#endif
 }
 
 void picoApp::draw(){
@@ -154,19 +205,58 @@ void picoApp::draw(){
     // printf("DRAW RESOLUTION = %d x %d\n", ofGetWidth(), ofGetHeight());
     // omxPlayer.draw(0, 0, ofGetWidth(), ofGetHeight());
 
+
+    
+#if RESYNC_ENABLE
     unsigned char *pixels = omxPlayer.getPixels();
     nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
-   
     
-#if RESYNC_PROJECT_QR_ENABLE
-    for (i=0; i<height; i++) {             
+    /*for (i=0; i<height; i++) {             
         for (j=0; j<width; j++) {    
             var1 = (i*width + j)*nChannels;
+            var2 = (i*width + j)*3;
             for (k=0; k<3; k++) {
-                pixels[var1+k] = qr_frame[(i*width+j)*3+k]; 
+                pixels[var1+k] = qr_frame[var2+k]; 
             }
         }        
+    }*/
+    
+    int loadqr_num = 10;
+    
+    int qrnum = 198;
+    int shift;
+    
+    if (loadqr_num)
+    {
+        if (qrnum % 2 == 0) shift = -150;
+        else shift = 150;
+        
+        shift = -150;
+        var2 = 0;
+        for (i=125; i<355; i++) {
+            for (j=205+shift; j<435+shift; j++) {
+                var1 = (i*width + j)*4;
+                for (k=0; k<3; k++) {
+                    pixels[var1+k] = qr_frame[var2]; 
+                }
+                var2 = var2 + 3;
+            }   
+        }
+        shift = 150;
+        var2 = 0;
+        for (i=125; i<355; i++) {
+            for (j=205+shift; j<435+shift; j++) {
+                var1 = (i*width + j)*4;
+                for (k=0; k<3; k++) {
+                    pixels[var1+k] = qr_frame[var2]; 
+                }
+                var2 = var2 + 3;
+            }   
+        }
     }
+#else
+    unsigned char *pixels = omxPlayer.getPixels();
+    nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
 #endif
         
 #if ENABLE_BLENDING    
@@ -228,8 +318,18 @@ void picoApp::draw(){
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
     glPopMatrix();
 #else
+    
+    #if RESYNC_ENABLE
+    ofSetHexColor(0x000000);
+    qrCapture.draw(0,0);
+    // either draw from qrCapture or pixelOutput for testing
+    // pixelOutput.loadData(pixels, omxPlayer.getWidth(), omxPlayer.getHeight(), GL_RGBA);
+    // pixelOutput.draw(0,0,omxPlayer.getWidth(),omxPlayer.getHeight());
+    #else
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
+    #endif
+
 #endif
 
 #if false
@@ -2573,10 +2673,31 @@ int picoApp::loadQR(int qrnum)
     FILE *fp;
     char *fbp = 0;   
     char fileToOpen[30];
+    int shift;
     
     sprintf(fileToOpen, "../../video/qrblob/QR%03d.rgb", qrnum);
     fp = fopen(fileToOpen, "r");
-    fread(&qr_frame[0], 1, 640*480*3, fp);
+    fread(&qr_frame[0], 1, 230*230*3, fp);
+    printf(">>>> loadQR QR%03d to qr_frame buffer\n", qrnum);
+
+/*    
+    if (qrnum % 2 == 0) shift = -150;
+    else shift = 150;
+
+    for (y=125; y<355; y++) {
+        for (x=205+shift; x<435+shift; x++) {
+            red = *pixel_ptr++;
+            green = *pixel_ptr++;
+            blue = *pixel_ptr++;
+
+            location =  (x+vinfo.xoffset) * (vinfo.bits_per_pixel/8) +
+                        (y+vinfo.yoffset) * finfo.line_length;
+            *((unsigned short int*)(fbp + location)) = ((red>>3)<<11)|((green>>2)<<5)|(blue>>3);
+        }   
+    }
+  */  
+    
+    
     
     return 1;
 }
