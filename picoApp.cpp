@@ -158,9 +158,10 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 
 void picoApp::update()
 {
-/*    if (doSaveImage ) {
+    if (doSaveImage ) {
         doSaveImage = false;
         // ofLogVerbose() << " saving image... ";
+        printf("save Image...\n");
         omxPlayer.saveImage();
     }
     
@@ -170,9 +171,7 @@ void picoApp::update()
             pixelOutput.allocate(width, height, GL_RGBA);
         }
     }
- */
-    
- 
+
 #if RESYNC_ENABLE // for test2 only, will change to switch between QR and video frames
     /* setting for qr capture */
     ofBackground(100,100,100);
@@ -332,10 +331,10 @@ void picoApp::draw(){
 
 #endif
 
-#if false
+#if true
     stringstream info;
     info <<"\n" << "p=Pause,f=Play,s=Save" << doUpdatePixels << startPlayVideo << doSaveImage;
-    ofDrawBitmapStringHighlight(omxPlayer.getInfo() + info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::yellow);
+    ofDrawBitmapStringHighlight(omxPlayer.getInfo() + info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
 #endif
     
 }
