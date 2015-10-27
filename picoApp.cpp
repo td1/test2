@@ -12,7 +12,7 @@ void picoApp::setup()
     startPlayVideo = false;
     
     boardID = myboardID;
-    printf("passing boardID = %d\n", myboardID);
+    ofLog(OF_LOG_NOTICE, "passing boardID = %d\n", myboardID);
     
 /* currently still using ID defined at myID.h */    
 #ifdef TD1        
@@ -48,10 +48,11 @@ videoPath = ofToDataPath("./testpattern.mp4", true);
 videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif    
     
-#if RESYNC_ENABLE
-    loadQR(198); 
-#endif
+// #if RESYNC_ENABLE
+//    loadQR(198);
+// #endif
     
+    ofLog(OF_LOG_NOTICE, "getHomography %d", myboardID);
     getHomography(boardID);
       
 #ifdef USE_COMMON_HOMOGRAPHY	
@@ -104,20 +105,22 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     omxPlayer.loadMovie(videoPath); 
     width = omxPlayer.getWidth();
     height = omxPlayer.getHeight();
-    printf("MOVIE RESOLUTION = %d x %d, DEFAULT = %d x %d\n", width, height, WIDTH, HEIGHT);
+    ofLog(OF_LOG_NOTICE, "MOVIE RESOLUTION = %dx%d, DEFAULT = %dx%d\n", width, height, WIDTH, HEIGHT);
     if (width != WIDTH || height != HEIGHT) {
-        printf("change to use width=%d, height=%d instead default values\n", width, height);
+    	ofLog(OF_LOG_NOTICE,"change to use width=%d, height=%d instead default values\n", width, height);
     }    
         
 #if BYPASS_CAPTURE_SYNC
-    printf("\n>>>>> BYPASS CAPTURE SYNC, MYID = %d \n", boardID);
+    ofLog(OF_LOG_NOTICE, "\n>>>>> BYPASS CAPTURE SYNC, MYID = %d \n", boardID);
 #else
+    ofLog(OF_LOG_NOTICE, "syncVideo %d starts", boardID);
     syncVideo(boardID);
 #endif
 
     ofBackground(0,0,0);
     consoleListener.setup(this);
     ofSetFrameRate(30);
+
 #if 0    
     startPlayVideo = true;
     omxPlayer.loadMovie(videoPath); 
@@ -130,9 +133,9 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif
     
 #if RESYNC_ENABLE
-    /* setup for qrCapture */
-    vector<ofVideoDevice> devices = qrCapture.listDevices();
-	
+    /* setup for captureVideo */
+    /*
+    vector<ofVideoDevice> devices = captureVid.listDevices();
     for(int i = 0; i < devices.size(); i++){
 	cout << devices[i].id << ": " << devices[i].deviceName; 
         if( devices[i].bAvailable ){
@@ -141,14 +144,25 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
             cout << " - unavailable " << endl; 
         }
     }
-    qrCapture.setDeviceID(0);
-    qrCapture.setDesiredFrameRate(60);
-    qrCapture.initGrabber(320,240);
-    
-    //HUNG videoInverted = new unsigned char[320*240*3];
-    //HUNG videoInverted 	= new unsigned char[camWidth*camHeight*3];
-    //HUNG videoTexture.allocate(camWidth,camHeight, GL_RGB);	
+    captureVid.setDeviceID(0);
+    captureVid.setDesiredFrameRate(60);
+    captureVid.initGrabber(640,480);
     ofSetVerticalSync(true);
+    */
+    ofLog(OF_LOG_NOTICE, "initGrabber resolution %dx%d", width, height);
+    captureVid.setVerbose(true);
+    // captureVid.initGrabber(width,height);
+    captureVid.initGrabber(320,240);
+
+    ofLog(OF_LOG_NOTICE, "init capture image...starting with resolution %dx%d", 320, 240);
+    captureImg.allocate(320,240);
+    grayCaptureImg.allocate(320,240);
+    grayBackground.allocate(320,240);
+    grayDiff.allocate(320,240);
+
+    bUpdateBackground = true;
+    threshold = 80;
+
 #endif
     
     if (!pixelOutput.isAllocated()) {
@@ -158,36 +172,39 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 
 void picoApp::update()
 {
+
+
+#if RESYNC_ENABLE
+    bool bNewFrame = false;
+    ofBackground(100,100,100);
+    captureVid.update();
+    bNewFrame = captureVid.isFrameNew();
+    if (captureVid.isFrameNew()) {
+    	// ofLog(OF_LOG_NOTICE, "new image captured");
+    	captureImg.setFromPixels(captureVid.getPixels(), 320,240);
+      	grayCaptureImg = captureImg;
+   		if (bUpdateBackground == true){
+   			grayBackground = grayCaptureImg;
+   			bUpdateBackground = false;
+        }
+   		grayDiff.absDiff(grayBackground, grayCaptureImg);
+        grayDiff.threshold(threshold);
+        // contourFinder.findContours(grayDiff, 20, (340*240)/3, 10, true);
+        contourFinder.findContours(grayDiff, 5, 20, 10, false);
+    }
+#else
     if (doSaveImage ) {
-        doSaveImage = false;
-        // ofLogVerbose() << " saving image... ";
-        printf("save Image...\n");
+    	doSaveImage = false;
+        ofLog(OF_LOG_NOTICE, "save Image...\n");
         omxPlayer.saveImage();
     }
-    
+
     if (doUpdatePixels) {
-    	omxPlayer.updatePixels();
+      	omxPlayer.updatePixels();
         if (!pixelOutput.isAllocated()) {
-            pixelOutput.allocate(width, height, GL_RGBA);
+        	pixelOutput.allocate(width, height, GL_RGBA);
         }
     }
-
-#if RESYNC_ENABLE // for test2 only, will change to switch between QR and video frames
-    /* setting for qr capture */
-    ofBackground(100,100,100);
-    qrCapture.update(); 
-    /*
-    if (qrCapture.isFrameNew()){
-	int totalPixels = 320*240*3;
-	unsigned char *pixels = qrCapture.getPixels();
-	for (int i = 0; i < totalPixels; i++){
-            videoInverted[i] = 255 - pixels[i];
-	}
-	videoTexture.loadData(videoInverted, camWidth,camHeight, GL_RGB);
-    }
-     */
-#else
-        omxPlayer.updatePixels();
 #endif
 }
 
@@ -206,7 +223,7 @@ void picoApp::draw(){
 
 
     
-#if RESYNC_ENABLE
+#if 0 // RESYNC_ENABLE
     unsigned char *pixels = omxPlayer.getPixels();
     nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
     
@@ -253,9 +270,6 @@ void picoApp::draw(){
             }   
         }
     }
-#else
-    unsigned char *pixels = omxPlayer.getPixels();
-    nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
 #endif
         
 #if ENABLE_BLENDING    
@@ -318,13 +332,72 @@ void picoApp::draw(){
     glPopMatrix();
 #else
     
-    #if RESYNC_ENABLE
-    ofSetHexColor(0x000000);
-    qrCapture.draw(0,0);
-    // either draw from qrCapture or pixelOutput for testing
-    // pixelOutput.loadData(pixels, omxPlayer.getWidth(), omxPlayer.getHeight(), GL_RGBA);
-    // pixelOutput.draw(0,0,omxPlayer.getWidth(),omxPlayer.getHeight());
+	#if RESYNC_ENABLE
+	ofSetHexColor(0xffffff);
+
+	captureImg.draw(0,0);
+	grayBackground.draw(320,0);
+	grayDiff.draw(0,240);
+
+	// draw a rectangle to display contour
+	ofFill();
+	ofSetHexColor(0x333333);
+	ofRect(320,240,320,240);
+	ofSetHexColor(0xffffff);
+
+	// contourFinder.draw(320,240);
+	for (int i = 0; i < contourFinder.nBlobs; i++){
+        contourFinder.blobs[i].draw(320,240);
+
+        int blobX = contourFinder.blobs[i].boundingRect.x;
+        int blobY = contourFinder.blobs[i].boundingRect.y;
+        int blobA = contourFinder.blobs[i].area;
+        ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+
+        ofSetHexColor(0xff0000);
+
+        // mark on color image
+        ofDrawBitmapString("+",
+  			contourFinder.blobs[i].boundingRect.x + contourFinder.blobs[i].boundingRect.width/2,
+   			contourFinder.blobs[i].boundingRect.y + contourFinder.blobs[i].boundingRect.height/2);
+
+        // mark on bg image
+        ofDrawBitmapString("+",
+        	contourFinder.blobs[i].boundingRect.x + contourFinder.blobs[i].boundingRect.width/2 + 320,
+        	contourFinder.blobs[i].boundingRect.y + contourFinder.blobs[i].boundingRect.height/2);
+
+        // mark on diff image
+        ofDrawBitmapString("+",
+           	contourFinder.blobs[i].boundingRect.x + contourFinder.blobs[i].boundingRect.width/2,
+           	contourFinder.blobs[i].boundingRect.y + contourFinder.blobs[i].boundingRect.height/2 + 240);
+
+        // mark on contour image
+    	ofDrawBitmapString("+",
+			contourFinder.blobs[i].boundingRect.x + contourFinder.blobs[i].boundingRect.width/2 + 320,
+			contourFinder.blobs[i].boundingRect.y + contourFinder.blobs[i].boundingRect.height/2 + 240);
+
+		// draw over the centroid if the blob is a hole
+		ofSetColor(255);
+		if(contourFinder.blobs[i].hole){
+			ofSetHexColor(0x00ff00);
+			ofDrawBitmapString("+",
+				contourFinder.blobs[i].boundingRect.getCenter().x + 320,
+				contourFinder.blobs[i].boundingRect.getCenter().y + 240);
+		}
+    }
+
+	ofSetHexColor(0xffffff);
+	stringstream reportStr;
+	reportStr << "bg subtraction and blob detection" << endl
+			  << "press ' ' to capture bg" << endl
+			  << "threshold " << threshold << " (press: +/-)" << endl
+			  << "num blobs found " << contourFinder.nBlobs << ", fps: " << ofGetFrameRate(); // << endl
+	ofDrawBitmapString(reportStr.str(), 20, 300);
+
     #else
+    unsigned char *pixels = omxPlayer.getPixels();
+    nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
+
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
     #endif
@@ -338,13 +411,9 @@ void picoApp::draw(){
     ofCircle(640-10,10,5);
     ofCircle(640-10,480-10,5);
     ofCircle(10,480-10,5);
-    
-    
 #endif
-    
-    
 
-#if true
+#if false
     stringstream info;
     info <<"\n" << "p=Pause,f=Play,s=Save" << doUpdatePixels << startPlayVideo << doSaveImage;
     ofDrawBitmapStringHighlight(omxPlayer.getInfo() + info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
@@ -354,20 +423,26 @@ void picoApp::draw(){
 
 void picoApp::keyPressed  (int key)
 {
-    if(key == 's')
-    {
-        doSaveImage = true;	
-    }
-
-    if(key == 'p')
-    {
-        doUpdatePixels = !doUpdatePixels;	
-    }
-
-    if(key == 'f')
-    {
-        startPlayVideo = true;	
-    }
+	switch (key) {
+		case 's':
+			doSaveImage = true;
+    		break;
+		case 'p':
+			doUpdatePixels = !doUpdatePixels;
+		case 'f':
+			startPlayVideo = true;
+		case ' ':
+    		bUpdateBackground = true;
+    		break;
+    	case '+':
+    		threshold ++;
+    		if (threshold > 255) threshold = 255;
+    		break;
+    	case '-':
+    		threshold --;
+    		if (threshold < 0) threshold = 0;
+    		break;
+	}
 }
 
 void picoApp::onCharacterReceived(SSHKeyListenerEventData& e)
@@ -2764,38 +2839,36 @@ int picoApp::getHomography(int BoardID)
     // Open the file for reading and writing
     fbfd = open("/dev/fb0", O_RDWR);
     if (!fbfd) {
-        printf("Error: cannot open framebuffer device.\n");
+        ofLog(OF_LOG_ERROR, "Error: cannot open framebuffer device.\n");
         return 0;
     }
-    printf("The framebuffer device was opened successfully.\n");
 
     // Get fixed screen information
     if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo)) {
-        printf("Error reading fixed information.\n");
+        ofLog(OF_LOG_ERROR, "Error reading fixed information.\n");
         return 0;
     }
 
     // Get variable screen information */
     if (ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo)) {
-        printf("Error reading variable information.\n");
+        ofLog(OF_LOG_ERROR, "Error reading variable information.\n");
         return 0;
     }
 
     // Figure out the size of the screen in bytes
     screensize = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
-    printf("screensize = %ld\n", screensize);
-    printf("vinfo.xres = %d\n", vinfo.xres);
-    printf("vinfo.yres = %d\n", vinfo.yres);
-    printf("vinfo.bits_per_pixel = %d\n", vinfo.bits_per_pixel);
+    ofLog(OF_LOG_NOTICE, "screensize = %ld bytes\n", screensize);
+    ofLog(OF_LOG_NOTICE, "vinfo.xres = %d\n", vinfo.xres);
+    ofLog(OF_LOG_NOTICE, "vinfo.yres = %d\n", vinfo.yres);
+    ofLog(OF_LOG_NOTICE, "vinfo.bits_per_pixel = %d\n", vinfo.bits_per_pixel);
 
     /* Map the device to memory */
     fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0); 
-
     if ((int)fbp == -1) {
-        printf("Error: failed to map framebuffer device to memory.\n");
+    	ofLog(OF_LOG_ERROR, "Error: failed to map framebuffer device to memory.\n");
         return 0;
     }
-    // printf("The framebuffer device was mapped to memory successfully.\n");
+    // ofLog(OF_LOG_NOTICE, "The framebuffer device was mapped to memory successfully.\n");
 
     gettimeofday(&tv, NULL);
     prevBarTime = (double)tv.tv_sec + (0.000001 * tv.tv_usec);
@@ -2808,11 +2881,8 @@ int picoApp::getHomography(int BoardID)
 
         numBars++;
         loopNum++;
-        // printf("BAR%dLOOP%d ", numBars, loopNum);
+        // ofLog(OF_LOG_NOTICE, "BAR%dLOOP%d ", numBars, loopNum);
 
-        // clear screen
-        // if ((loopNum == 1) || ((numBars == MAX_FRAMES) && (!synch)))
-        // prevent clear screen right after sync to continue sending out QRs for others
         if ((loopNum == 1) || (numBars == MAX_FRAMES))
         {
             for (y=0; y<479; y++)
@@ -2825,26 +2895,16 @@ int picoApp::getHomography(int BoardID)
             numBars = 1;
         }
 
-        // keep sending out QRs
-        // upperleft_x = UPPERLEFT_X + (BAR_WIDTH + BAR_DISTANCE) * (numBars - 1);
-        
-        // keep sending out QRs sequentially, not sync yet  
-        // HUNG TODO need to add a fixed time to wait for other sets
-        // fixed delay time when wait=0
-        // if (synch == 0 || (loopNum < MAX_FRAMES)) {
-        // if (synch == 0) {
-        // HUNG WORKING NEW to wait after done getHomography
         if (synch == 0 || thdata2.time2wait > 0)
         {
             if (thdata2.time2wait) 
             {
-                printf("getHomography done...wait %d\n", thdata2.time2wait);
+            	ofLog(OF_LOG_NOTICE, "getHomography done...wait %d\n", thdata2.time2wait);
                 thdata2.time2wait--;
             }
 
-            // sprintf(fileToOpen, "../../video/qrblob/QR%03d.rgb", numBars + thdata2.myID * 100);
             sprintf(fileToOpen, "../../video/qrblob/QR%03d.rgb", (numBars%2) + 98 + thdata2.myID * 100);
-            // printf("sending QR#%d\n", (numBars%2) + 98 + thdata2.myID * 100);
+            // ofLog(OF_LOG_NOTICE, "sending QR#%d\n", (numBars%2) + 98 + thdata2.myID * 100);
             
             fp = fopen(fileToOpen, "r");
             fread(video_frame, 1, 640*480*3, fp);
@@ -2873,7 +2933,7 @@ int picoApp::getHomography(int BoardID)
             }
         }
         else { // synch=1, finish get matrix                
-            printf("*** done screenShotGetHomography...\n");
+        	ofLog(OF_LOG_NOTICE, "*** done screenShotGetHomography...\n");
             break;
         }
         
@@ -2883,27 +2943,25 @@ int picoApp::getHomography(int BoardID)
             // Take screenshots to analyze and sync
             if (tookShot == 0)
             {
-                printf("*** screenShotGetHomography thread...\n");
+            	ofLog(OF_LOG_NOTICE, "*** screenShotGetHomography thread...\n");
                 pthread_create(&thread2, NULL, &screenShotGetHomography, &thdata2);
                 tookShot = 1;
             }
 
             if (thdata2.shotAnalyzed) {
-                printf("*** done screenShotGetHomography, wait for others %d frames\n", thdata2.time2wait);
+            	ofLog(OF_LOG_NOTICE, "*** done screenShotGetHomography, wait for others %d frames\n", thdata2.time2wait);
                 synch = 1;
                 // break; HUNG TEST // should we break here after finished
             }
         }
         
         prevBarTime = (double)tv.tv_sec + (0.000001 * tv.tv_usec);
-    } // end while loop
+    }
 
     system("echo 'stop' > /tmp/test.fifo");
     pthread_join(thread2, NULL);
     munmap(fbp, screensize);
     close(fbfd);
-    printf("DONE GET HOMOGRAPHY...\n");
-    // HUNG TODO check out pthread_exit(NULL);
     return 1;
 }
 
@@ -2957,38 +3015,38 @@ int picoApp::syncVideo(int BoardID)
     // Open the file for reading and writing
     fbfd = open("/dev/fb0", O_RDWR);
     if (!fbfd) {
-        printf("Error: cannot open framebuffer device.\n");
+    	ofLog(OF_LOG_ERROR, "Error: cannot open framebuffer device.\n");
         return 0;
     }
-    printf("The framebuffer device was opened successfully.\n");
+    // ofLog(OF_LOG_NOTICE, "The framebuffer device was opened successfully.\n");
 
     // Get fixed screen information
     if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo)) {
-        printf("Error reading fixed information.\n");
+    	ofLog(OF_LOG_ERROR, "Error reading fixed information.\n");
         return 0;
     }
 
     // Get variable screen information */
     if (ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo)) {
-        printf("Error reading variable information.\n");
+    	ofLog(OF_LOG_ERROR, "Error reading variable information.\n");
         return 0;
     }
 
     // Figure out the size of the screen in bytes
     screensize = vinfo.xres * vinfo.yres * vinfo.bits_per_pixel / 8;
-    printf("screensize = %ld\n", screensize);
-    printf("vinfo.xres = %d\n", vinfo.xres);
-    printf("vinfo.yres = %d\n", vinfo.yres);
-    printf("vinfo.bits_per_pixel = %d\n", vinfo.bits_per_pixel);
+    ofLog(OF_LOG_NOTICE, "screensize = %ld\n", screensize);
+    ofLog(OF_LOG_NOTICE, "vinfo.xres = %d\n", vinfo.xres);
+    ofLog(OF_LOG_NOTICE, "vinfo.yres = %d\n", vinfo.yres);
+    ofLog(OF_LOG_NOTICE, "vinfo.bits_per_pixel = %d\n", vinfo.bits_per_pixel);
 
     /* Map the device to memory */
     fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0); 
 
     if ((int)fbp == -1) {
-        printf("Error: failed to map frame buffer device to memory.\n");
+    	ofLog(OF_LOG_ERROR, "Error: failed to map frame buffer device to memory.\n");
         return 0;
     }
-    printf("The framebuffer device was mapped to memory successfully.\n");
+    // ofLog(OF_LOG_NOTICE, "The framebuffer device was mapped to memory successfully.\n");
 
     gettimeofday(&tv, NULL);
     prevBarTime = (double)tv.tv_sec + (0.000001 * tv.tv_usec);
@@ -3000,7 +3058,7 @@ int picoApp::syncVideo(int BoardID)
         
         /* STEP6: done syncVideo, playing video now */
         if (startPlayVideo == true) {
-            printf(">>>>>>>>>>>> start play video = %d\n", startPlayVideo);
+        	ofLog(OF_LOG_NOTICE, ">>>>>>>>>>>> start play video = %d\n", startPlayVideo);
             break;
         } 
 
@@ -3009,17 +3067,17 @@ int picoApp::syncVideo(int BoardID)
         {
             sync = 1; 
             time2wait = thdata1.time2wait;
-            printf("time2wait = %d\n", time2wait);
+            ofLog(OF_LOG_NOTICE, "time2wait = %d\n", time2wait);
         }
 
         numBars++;
         loopNum++;
-        // printf("loop%d ", loopNum);
+        // ofLog(OF_LOG_NOTICE, "loop%d ", loopNum);
         
         // clear screen
         if ((loopNum == 1) || ((numBars == MAX_FRAMES) && (!sync)))
         {
-            printf("clear screen at beginning\n");
+        	// ofLog(OF_LOG_NOTICE, "clear screen at beginning\n");
             for (y=0; y<479; y++)
             for (x=0; x<640; x++)
             {
@@ -3040,12 +3098,12 @@ int picoApp::syncVideo(int BoardID)
                 if (time2wait)
                 {
                     time2wait --;
-                    printf("time2wait = %d\n", time2wait);
+                    ofLog(OF_LOG_NOTICE, "time2wait = %d\n", time2wait);
 
                     if (loopNum)
                         loopNum --;
                     else
-                        printf("wrong state, loopNumber = %d\n", loopNum);
+                    	ofLog(OF_LOG_ERROR, "wrong state, loopNumber = %d\n", loopNum);
                     
                     /* freeze to update the frame number */
                     prevBarTime = (double)tv.tv_sec + (0.000001 * tv.tv_usec);
@@ -3056,7 +3114,7 @@ int picoApp::syncVideo(int BoardID)
             sprintf(fileToOpen, "../../video/qrblob/QR%03d.rgb", numBars + thdata1.myID * 100);
             fp = fopen(fileToOpen, "r");
             if (fp == NULL) {
-                printf(">>>>> QR file read error, numBars %d, thdata1.myID %d \n", numBars, thdata1.myID);
+            	ofLog(OF_LOG_ERROR, ">>>>> QR file read error, numBars %d, thdata1.myID %d \n", numBars, thdata1.myID);
                 return 0;
             }
             fp = fopen(fileToOpen, "r");
@@ -3099,7 +3157,7 @@ int picoApp::syncVideo(int BoardID)
         }
         /* STEP5: REACH MAX FRAMES AND sync = 1 => OK to start playing video */ 
         else { // wait=0, sync=1, start playing now                
-            printf("start playing video now, loopNum=%d, sync=%d\n", loopNum, sync);
+        	ofLog(OF_LOG_NOTICE, "start playing video now, loopNum=%d, sync=%d\n", loopNum, sync);
             startPlayVideo = true;
         }
 

@@ -26,8 +26,8 @@ extern "C" {
 /* COMPILING SWITCH MODIFICATION */
 //#define HOMOGRAPHY_TRANSFORM_ENABLE     1
 //#define ENABLE_BLENDING                 1
-//#define RESYNC_ENABLE                     1
-#define GENERATE_BLOBS                      1
+#define RESYNC_ENABLE                     1
+#define GENERATE_BLOBS					  1
 
 /* DEBUG/TEST SWITCH */
 //#define DEBUG_HOMOGRAPHY                1
@@ -119,10 +119,18 @@ public:
         int getHomography(int boardID);
         int loadQR(int qrnum);
                
-	ofVideoGrabber 	qrCapture;
-        ofTexture pixelOutput;
+        ofTexture 				pixelOutput;
+        ofVideoGrabber 			captureVid;
+        ofxCvColorImage 		captureImg;
+        ofxCvGrayscaleImage 	grayCaptureImg;
+		ofxCvGrayscaleImage 	grayBackground;
+		ofxCvGrayscaleImage 	grayDiff;
+        ofxCvContourFinder 		contourFinder;
         
-	bool doUpdatePixels;
+    	int 					threshold;
+    	bool					bUpdateBackground;
+
+    	bool doUpdatePixels;
         bool startPlayVideo;
         
         int width, height;

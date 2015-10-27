@@ -5,19 +5,19 @@
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
-        printf("Usage: %s myID\n", argv[0]);
+    	ofLog(OF_LOG_ERROR,"Usage: %s myID\n", argv[0]);
         return 1;
     }
     myboardID = atoi(argv[1]); /* convert strings to integer */
-    printf("myID = %d\n", myboardID);
+    ofLog(OF_LOG_NOTICE,"myID = %d\n", myboardID);
     
-	// ofSetLogLevel(OF_LOG_VERBOSE);
-    ofSetLogLevel(OF_LOG_WARNING);
+	ofSetLogLevel(OF_LOG_VERBOSE);
+    //ofSetLogLevel(OF_LOG_WARNING);
 	//ofSetCurrentRenderer(ofGLProgrammableRenderer::TYPE);
 	
     /* for res1280x960 measuring ofSetupOpenGL(1280, 960, OF_WINDOW); */
     /* change when measure the HDMI 720p output mode, otherwise segmentation fault */ 
-     // ofSetupOpenGL(1280, 720, OF_WINDOW);
+    // ofSetupOpenGL(1280, 720, OF_WINDOW);
      
      
 #if DEBUG_HOMOGRAPHY
