@@ -330,6 +330,19 @@ void picoApp::draw(){
     #endif
 
 #endif
+    
+#if GENERATE_BLOBS
+    ofSetColor(255, 255, 255);
+    ofFill();
+    ofCircle(10,10,5);
+    ofCircle(640-10,10,5);
+    ofCircle(640-10,480-10,5);
+    ofCircle(10,480-10,5);
+    
+    
+#endif
+    
+    
 
 #if true
     stringstream info;

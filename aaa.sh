@@ -1,9 +1,9 @@
 #!/bin/sh
-cp picoApp.cpp ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/src/
-cp picoApp.h ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/src/
-cp main.cpp ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/src/
-cp upload_my_homography_set.sh ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/bin/
-cp sample8qr.png ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/bin/
-cp blend*.txt ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/bin/
-cp bbb.sh ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/
-chmod 777 ~/openFrameworks/addons/ofxOMXPlayer/hung_resync/src/picoApp.cpp
+cp picoApp.cpp ~/openFrameworks/apps/myApps/resync/src/
+cp picoApp.h ~/openFrameworks/apps/myApps/resync/src/
+cp main.cpp ~/openFrameworks/apps/myApps/resync/src/
+cp upload_my_homography_set.sh ~/openFrameworks/apps/myApps/resync/bin/
+cp sample8qr.png ~/openFrameworks/apps/myApps/resync/bin/
+cp blend*.txt ~/openFrameworks/apps/myApps/resync/bin/
+cp bbb.sh ~/openFrameworks/apps/myApps/resync/
+chmod 777 ~/openFrameworks/apps/myApps/resync/src/picoApp.cpp

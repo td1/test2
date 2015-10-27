@@ -4,6 +4,7 @@
 #include "ofxOMXPlayer.h"
 #include "myID.h"
 #include "ConsoleListener.h"
+#include "ofxOpenCv.h"
 
 extern "C" {
 #include <unistd.h>
@@ -26,6 +27,7 @@ extern "C" {
 //#define HOMOGRAPHY_TRANSFORM_ENABLE     1
 //#define ENABLE_BLENDING                 1
 //#define RESYNC_ENABLE                     1
+#define GENERATE_BLOBS                      1
 
 /* DEBUG/TEST SWITCH */
 //#define DEBUG_HOMOGRAPHY                1
