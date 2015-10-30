@@ -26,8 +26,9 @@ extern "C" {
 /* COMPILING SWITCH MODIFICATION */
 //#define HOMOGRAPHY_TRANSFORM_ENABLE     1
 //#define ENABLE_BLENDING                 1
-#define RESYNC_ENABLE                     1
-#define GENERATE_BLOBS					  1
+//#define RESYNC_ENABLE                     1
+//#define GENERATE_BLOBS					  1
+#define TEST_RESYNC_HOMOGRAPHY				1
 
 /* DEBUG/TEST SWITCH */
 //#define DEBUG_HOMOGRAPHY                1
@@ -104,71 +105,77 @@ public:
 	ConsoleListener consoleListener;
 	void onCharacterReceived(SSHKeyListenerEventData& e);
 
-        void readMatrix(char* filename);
-        void readMatrix2(char* filename);
+	void readMatrix(char* filename);
+	void readMatrix2(char* filename);
 
-        int  getRightX(int y);
-        int  getLeftX(int y);
-        int getTopY(int x);
-        int getBottomY(int x);
-        double getXFade(int x, int y);
-        double getYFade(int x, int y);
-        void calFading(void);
-        
-        int syncVideo(int boardID);
-        int getHomography(int boardID);
-        int loadQR(int qrnum);
-               
-        ofTexture 				pixelOutput;
-        ofVideoGrabber 			captureVid;
-        ofxCvColorImage 		captureImg;
-        ofxCvGrayscaleImage 	grayCaptureImg;
-		ofxCvGrayscaleImage 	grayBackground;
-		ofxCvGrayscaleImage 	grayDiff;
-        ofxCvContourFinder 		contourFinder;
-        
-    	int 					threshold;
-    	bool					bUpdateBackground;
+	int  getRightX(int y);
+	int  getLeftX(int y);
+	int getTopY(int x);
+	int getBottomY(int x);
+	double getXFade(int x, int y);
+	double getYFade(int x, int y);
+	void calFading(void);
 
-    	bool doUpdatePixels;
-        bool startPlayVideo;
-        
-        int width, height;
-        char matrixFN[30];
-        int boardID;
-        unsigned char fadeRight,fadeDown;
+	int syncVideo(int boardID);
+	int getHomography(int boardID);
+	int loadQR(int qrnum);
 
-        int xoffset,yoffset;
-        double htlx,htly,htrx,htry,hblx,hbly,hbrx,hbry;
-        double vtlx,vtly,vtrx,vtry,vblx,vbly,vbrx,vbry;
-        double topSlope,bottomSlope,leftSlope,rightSlope,leftSlopeInv,rightSlopeInv;
+	ofTexture 				pixelOutput;
+        
+#if RESYNC
+	ofVideoGrabber 			captureVid;
+	ofxCvColorImage 		captureImg;
+	ofxCvGrayscaleImage 	grayCaptureImg;
+	ofxCvGrayscaleImage 	grayBackground;
+	ofxCvGrayscaleImage 	grayDiff;
+	ofxCvContourFinder 		contourFinder;
 
-        // move WIDTH/HEIGHT out of this class    
+	int 					threshold;
+	bool					bUpdateBackground;
+#endif
 
-        int yOverlapTop[WIDTH];
-        int yOverlapBottom[WIDTH];
-        int xOverlapLeft[HEIGHT];
-        int xOverlapRight[HEIGHT];
-        unsigned char xfadeMat[HEIGHT][WIDTH];
-        unsigned char yfadeMat[HEIGHT][WIDTH];
-        float matrix[3][3];      
-        
-        double h1[9];      
-        double h1inv[9];
-        double h2[9];
-        double h2inv[9];
-        
-        // double **dmatrix(int, int, int, int);
-        // double *dvector(int, int);
-        // void svdcmp(double **, int, int, double *, double **);
-        // END WORKING HERE
-        
-        pthread_mutex_t mutex;
-        double barRate;
-        double framePeriod;
-        
-        float myMatrix[16];
-        
-        unsigned char qr_frame[230*230*3];
+	bool doUpdatePixels;
+	bool startPlayVideo;
+
+	int width, height;
+	char matrixFN[30];
+	int boardID;
+	unsigned char fadeRight,fadeDown;
+
+	int xoffset,yoffset;
+	double htlx,htly,htrx,htry,hblx,hbly,hbrx,hbry;
+	double vtlx,vtly,vtrx,vtry,vblx,vbly,vbrx,vbry;
+	double topSlope,bottomSlope,leftSlope,rightSlope,leftSlopeInv,rightSlopeInv;
+
+	// move WIDTH/HEIGHT out of this class
+
+	int yOverlapTop[WIDTH];
+	int yOverlapBottom[WIDTH];
+	int xOverlapLeft[HEIGHT];
+	int xOverlapRight[HEIGHT];
+	unsigned char xfadeMat[HEIGHT][WIDTH];
+	unsigned char yfadeMat[HEIGHT][WIDTH];
+	float matrix[3][3];
+
+	double h1[9];
+	double h1inv[9];
+	double h2[9];
+	double h2inv[9];
+
+	// double **dmatrix(int, int, int, int);
+	// double *dvector(int, int);
+	// void svdcmp(double **, int, int, double *, double **);
+	// END WORKING HERE
+
+	pthread_mutex_t mutex;
+	double barRate;
+	double framePeriod;
+
+	float myMatrix[16];
+	float resyncMatrix[16];
+	ofPoint src[4];
+	ofPoint dst[4];
+
+	unsigned char qr_frame[230*230*3];
 };
 

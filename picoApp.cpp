@@ -1,4 +1,5 @@
 #include "picoApp.h"
+#include "homography.h"
 
 void picoApp::setup()
 {
@@ -105,7 +106,7 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     omxPlayer.loadMovie(videoPath); 
     width = omxPlayer.getWidth();
     height = omxPlayer.getHeight();
-    ofLog(OF_LOG_NOTICE, "MOVIE RESOLUTION = %dx%d, DEFAULT = %dx%d\n", width, height, WIDTH, HEIGHT);
+    ofLog(OF_LOG_NOTICE, "movie loaded, resolution = %dx%d, default = %dx%d\n", width, height, WIDTH, HEIGHT);
     if (width != WIDTH || height != HEIGHT) {
     	ofLog(OF_LOG_NOTICE,"change to use width=%d, height=%d instead default values\n", width, height);
     }    
@@ -149,12 +150,11 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     captureVid.initGrabber(640,480);
     ofSetVerticalSync(true);
     */
-    ofLog(OF_LOG_NOTICE, "initGrabber resolution %dx%d", width, height);
+
     captureVid.setVerbose(true);
     // captureVid.initGrabber(width,height);
     captureVid.initGrabber(320,240);
-
-    ofLog(OF_LOG_NOTICE, "init capture image...starting with resolution %dx%d", 320, 240);
+    ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", 320, 240);
     captureImg.allocate(320,240);
     grayCaptureImg.allocate(320,240);
     grayBackground.allocate(320,240);
@@ -172,8 +172,6 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 
 void picoApp::update()
 {
-
-
 #if RESYNC_ENABLE
     bool bNewFrame = false;
     ofBackground(100,100,100);
@@ -192,6 +190,13 @@ void picoApp::update()
         // contourFinder.findContours(grayDiff, 20, (340*240)/3, 10, true);
         contourFinder.findContours(grayDiff, 5, 20, 10, false);
     }
+
+//    if (doUpdatePixels) {
+//    	omxPlayer.updatePixels();
+//        if (!pixelOutput.isAllocated()) {
+//        	pixelOutput.allocate(width, height, GL_RGBA);
+//        }
+//    }
 #else
     if (doSaveImage ) {
     	doSaveImage = false;
@@ -221,7 +226,12 @@ void picoApp::draw(){
     // printf("DRAW RESOLUTION = %d x %d\n", ofGetWidth(), ofGetHeight());
     // omxPlayer.draw(0, 0, ofGetWidth(), ofGetHeight());
 
-
+    ofSetHexColor(0xFFFFFF);
+	ofFill();
+	ofCircle(20,20,3);
+	ofCircle(640-20,10,3);
+	ofCircle(640-20,480-20,3);
+	ofCircle(20,480-20,3);
     
 #if 0 // RESYNC_ENABLE
     unsigned char *pixels = omxPlayer.getPixels();
@@ -323,6 +333,39 @@ void picoApp::draw(){
     }
 #endif
 
+#if TEST_RESYNC_HOMOGRAPHY
+    // ofLog(OF_LOG_NOTICE, "test resync homography...");
+    unsigned char *pixels = omxPlayer.getPixels();
+    nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
+
+    src[0].set(0,0);
+    src[1].set(640,0);
+    src[2].set(640,480);
+    src[3].set(0,480);
+
+    dst[0].set(80,80);
+    dst[1].set(560,80);
+    dst[2].set(560,400);
+    dst[3].set(80,400);
+    ofSetHexColor(0x00FF00);
+    ofDrawBitmapString("+", 80, 80);
+    ofDrawBitmapString("+", 560, 80);
+    ofDrawBitmapString("+", 560, 400);
+    ofDrawBitmapString("+", 80, 400);
+    ofSetHexColor(0xFFFFFF);
+    getResyncHomography(src, dst, resyncMatrix);
+    // for (i=0; i<16; i++)
+    //    printf("%lf ", resyncMatrix[i]);
+    // printf("\n");
+
+    pixelOutput.loadData(pixels, width, height, GL_RGBA);
+    glPushMatrix();
+    glMultMatrixf(resyncMatrix);
+    glTranslatef(0,0,0);
+    pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
+    glPopMatrix();
+#endif
+
 #if HOMOGRAPHY_TRANSFORM_ENABLE
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
     glPushMatrix();
@@ -330,11 +373,13 @@ void picoApp::draw(){
     glTranslatef(0,0,0);    
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
     glPopMatrix();
-#else
+#endif
     
-	#if RESYNC_ENABLE
+#if RESYNC_ENABLE
 	ofSetHexColor(0xffffff);
 
+	// disable displaying the captured images
+	#if 0
 	captureImg.draw(0,0);
 	grayBackground.draw(320,0);
 	grayDiff.draw(0,240);
@@ -393,17 +438,37 @@ void picoApp::draw(){
 			  << "threshold " << threshold << " (press: +/-)" << endl
 			  << "num blobs found " << contourFinder.nBlobs << ", fps: " << ofGetFrameRate(); // << endl
 	ofDrawBitmapString(reportStr.str(), 20, 300);
+	#endif
 
-    #else
+	// display detected blob positions
+    int blobX = contourFinder.blobs[i].boundingRect.x;
+    int blobY = contourFinder.blobs[i].boundingRect.y;
+    int blobA = contourFinder.blobs[i].area;
+    ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+
     unsigned char *pixels = omxPlayer.getPixels();
     nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
 
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
-    #endif
+
+    ofSetColor(255, 255, 255);
+    ofFill();
+    ofCircle(10,10,5);
+    ofCircle(640-10,10,5);
+    ofCircle(640-10,480-10,5);
+    ofCircle(10,480-10,5);
 
 #endif
-    
+
+#if NO_HOMOGRAPHY_TRANFORM
+    unsigned char *pixels = omxPlayer.getPixels();
+    nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
+
+    pixelOutput.loadData(pixels, width, height, GL_RGBA);
+    pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
+#endif
+
 #if GENERATE_BLOBS
     ofSetColor(255, 255, 255);
     ofFill();
@@ -431,6 +496,7 @@ void picoApp::keyPressed  (int key)
 			doUpdatePixels = !doUpdatePixels;
 		case 'f':
 			startPlayVideo = true;
+#if RESYNC
 		case ' ':
     		bUpdateBackground = true;
     		break;
@@ -441,6 +507,7 @@ void picoApp::keyPressed  (int key)
     	case '-':
     		threshold --;
     		if (threshold < 0) threshold = 0;
+#endif
     		break;
 	}
 }
