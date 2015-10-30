@@ -164,6 +164,20 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     threshold = 80;
 
 #endif
+
+#if TEST_RESYNC_CAPTURE
+    captureVid.setVerbose(true);
+    // captureVid.initGrabber(width,height);
+    captureVid.initGrabber(320,240);
+    ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", 320, 240);
+    captureImg.allocate(320,240);
+    grayCaptureImg.allocate(320,240);
+    grayBackground.allocate(320,240);
+    grayDiff.allocate(320,240);
+
+    bUpdateBackground = true;
+    threshold = 80;
+#endif
     
     if (!pixelOutput.isAllocated()) {
         pixelOutput.allocate(width, height, GL_RGBA);
@@ -198,6 +212,25 @@ void picoApp::update()
 //        }
 //    }
 #else
+	#if TEST_RESYNC_CAPTURE
+    bool bNewFrame = false;
+    ofBackground(100,100,100);
+    captureVid.update();
+    bNewFrame = captureVid.isFrameNew();
+    if (bNewFrame) {
+      	// ofLog(OF_LOG_NOTICE, "new image captured");
+      	captureImg.setFromPixels(captureVid.getPixels(), 320,240);
+        grayCaptureImg = captureImg;
+     	if (bUpdateBackground == true){
+     		grayBackground = grayCaptureImg;
+     		bUpdateBackground = false;
+        }
+     	grayDiff.absDiff(grayBackground, grayCaptureImg);
+        grayDiff.threshold(threshold);
+        contourFinder.findContours(grayDiff, 5, 20, 10, false);
+    }
+	#endif
+
     if (doSaveImage ) {
     	doSaveImage = false;
         ofLog(OF_LOG_NOTICE, "save Image...\n");
@@ -343,15 +376,21 @@ void picoApp::draw(){
     src[2].set(640,480);
     src[3].set(0,480);
 
-    dst[0].set(80,80);
-    dst[1].set(560,80);
-    dst[2].set(560,400);
-    dst[3].set(80,400);
+    if (setPositionByMouse) {
+    	// ofLog(OF_LOG_NOTICE, "set new positions by mouse (%i,%i) (%i,%i) (%i,%i) (%i,%i)",dst[0],dst[1],dst[2],dst[3]);
+    }
+    else {
+    	// ofLog(OF_LOG_NOTICE, "set positions by default");
+    	dst[0].set(80,80);
+    	dst[1].set(560,80);
+    	dst[2].set(560,400);
+    	dst[3].set(80,400);
+    }
     ofSetHexColor(0x00FF00);
-    ofDrawBitmapString("+", 80, 80);
-    ofDrawBitmapString("+", 560, 80);
-    ofDrawBitmapString("+", 560, 400);
-    ofDrawBitmapString("+", 80, 400);
+    ofDrawBitmapString("+", dst[0]);
+    ofDrawBitmapString("+", dst[1]);
+    ofDrawBitmapString("+", dst[2]);
+    ofDrawBitmapString("+", dst[3]);
     ofSetHexColor(0xFFFFFF);
     getResyncHomography(src, dst, resyncMatrix);
     // for (i=0; i<16; i++)
@@ -375,6 +414,16 @@ void picoApp::draw(){
     glPopMatrix();
 #endif
     
+#if TEST_RESYNC_CAPTURE
+    // display detected blob positions
+    for (int i=0; i < contourFinder.nBlobs; i++) {
+    	int blobX = contourFinder.blobs[i].boundingRect.x;
+    	int blobY = contourFinder.blobs[i].boundingRect.y;
+    	int blobA = contourFinder.blobs[i].area;
+    	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+    }
+#endif
+
 #if RESYNC_ENABLE
 	ofSetHexColor(0xffffff);
 
@@ -3290,3 +3339,25 @@ void picoApp::calFading(void)
     }
 }
 
+//--------------------------------------------------------------
+void picoApp::mousePressed(int x, int y, int button){
+	ofLog(OF_LOG_NOTICE, "mousePressed = (%i,%i - button %i), nClick = %i", x, y, button, nClick);
+	switch (button) {
+		case 0: /* left button */
+			if (nClick >= 3) {
+				dst[3].set(x,y);
+				nClick = 0;
+			}
+			else {
+				dst[nClick].set(x,y);
+				nClick ++;
+			}
+			setPositionByMouse = true;
+			break;
+		case 2: /* right button */
+			setPositionByMouse = false;
+			nClick = 0;
+			break;
+		default:;
+	}
+}

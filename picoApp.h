@@ -29,6 +29,7 @@ extern "C" {
 //#define RESYNC_ENABLE                     1
 //#define GENERATE_BLOBS					  1
 #define TEST_RESYNC_HOMOGRAPHY				1
+#define TEST_RESYNC_CAPTURE					1
 
 /* DEBUG/TEST SWITCH */
 //#define DEBUG_HOMOGRAPHY                1
@@ -98,6 +99,7 @@ public:
 	void draw();
 	
 	void keyPressed(int key);
+	void mousePressed(int x, int y, int button);
 
 	ofxOMXPlayer omxPlayer;
 	bool doSaveImage;
@@ -122,7 +124,7 @@ public:
 
 	ofTexture 				pixelOutput;
         
-#if RESYNC
+#if RESYNC | TEST_RESYNC_CAPTURE
 	ofVideoGrabber 			captureVid;
 	ofxCvColorImage 		captureImg;
 	ofxCvGrayscaleImage 	grayCaptureImg;
@@ -175,6 +177,8 @@ public:
 	float resyncMatrix[16];
 	ofPoint src[4];
 	ofPoint dst[4];
+	int nClick;
+	int setPositionByMouse;
 
 	unsigned char qr_frame[230*230*3];
 };
