@@ -52,9 +52,11 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 // #if RESYNC_ENABLE
 //    loadQR(198);
 // #endif
-    
+
+#ifdef ENABLE_HOMOGRAPHY
     ofLog(OF_LOG_NOTICE, "getHomography %d", myboardID);
     getHomography(boardID);
+#endif
       
 #ifdef USE_COMMON_HOMOGRAPHY	
     switch (boardID) {
@@ -120,7 +122,7 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 
     ofBackground(0,0,0);
     consoleListener.setup(this);
-    ofSetFrameRate(30);
+    ofSetFrameRate(FRAME_RATE);
 
 #if 0    
     startPlayVideo = true;
@@ -168,6 +170,12 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 #if TEST_RESYNC_CAPTURE
     captureVid.setVerbose(true);
     // captureVid.initGrabber(width,height);
+    ofLog(OF_LOG_NOTICE, "vidGrabber: set device ID");
+    captureVid.setDeviceID(0);
+    ofLog(OF_LOG_NOTICE, "vidGrabber: set desired Frame Rate");
+    captureVid.setDesiredFrameRate(60);
+    ofLog(OF_LOG_NOTICE, "vidGrabber: set init Grabber");
+    // captureVid.initGrabber(1280,720);
     captureVid.initGrabber(320,240);
     ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", 320, 240);
     captureImg.allocate(320,240);
@@ -202,7 +210,7 @@ void picoApp::update()
    		grayDiff.absDiff(grayBackground, grayCaptureImg);
         grayDiff.threshold(threshold);
         // contourFinder.findContours(grayDiff, 20, (340*240)/3, 10, true);
-        contourFinder.findContours(grayDiff, 5, 20, 10, false);
+        contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 10, false);
     }
 
 //    if (doUpdatePixels) {
@@ -228,6 +236,16 @@ void picoApp::update()
      	grayDiff.absDiff(grayBackground, grayCaptureImg);
         grayDiff.threshold(threshold);
         contourFinder.findContours(grayDiff, 5, 20, 10, false);
+        // if (nFrame >2*FRAME_RATE) {
+        if (nFrame > 30) {
+        	nFrame = 0;
+            if (nPos >= 6)
+            	nPos = 0;
+            else
+            	nPos ++;
+        }
+        else
+        	nFrame ++;
     }
 	#endif
 
@@ -259,12 +277,15 @@ void picoApp::draw(){
     // printf("DRAW RESOLUTION = %d x %d\n", ofGetWidth(), ofGetHeight());
     // omxPlayer.draw(0, 0, ofGetWidth(), ofGetHeight());
 
+    ofFill();
+    ofSetHexColor(0x000000);
+    ofRect(0,0,640,80);
     ofSetHexColor(0xFFFFFF);
-	ofFill();
-	ofCircle(20,20,3);
-	ofCircle(640-20,10,3);
-	ofCircle(640-20,480-20,3);
-	ofCircle(20,480-20,3);
+	ofCircle(80+80*nPos,40,20);
+	// ofCircle(20,20,10);
+	// ofCircle(640-20,10,10);
+	// ofCircle(640-20,480-20,10);
+	// ofCircle(20,480-20,10);
     
 #if 0 // RESYNC_ENABLE
     unsigned char *pixels = omxPlayer.getPixels();
@@ -417,10 +438,13 @@ void picoApp::draw(){
 #if TEST_RESYNC_CAPTURE
     // display detected blob positions
     for (int i=0; i < contourFinder.nBlobs; i++) {
-    	int blobX = contourFinder.blobs[i].boundingRect.x;
-    	int blobY = contourFinder.blobs[i].boundingRect.y;
+    	int blobX = contourFinder.blobs[i].centroid.x;
+    	int blobY = contourFinder.blobs[i].centroid.y;
     	int blobA = contourFinder.blobs[i].area;
     	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+    	ofSetHexColor(0xFF0000);
+    	ofDrawBitmapString("+", contourFinder.blobs[i].centroid.x, contourFinder.blobs[i].centroid.y);
+    	ofSetHexColor(0xFFFFFF);
     }
 #endif
 

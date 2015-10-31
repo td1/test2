@@ -28,6 +28,7 @@ extern "C" {
 //#define ENABLE_BLENDING                 1
 //#define RESYNC_ENABLE                     1
 //#define GENERATE_BLOBS					  1
+#define ENABLE_HOMOGRAPHY					1 // turn off gethomography at init stage sometimes to test camera grabber
 #define TEST_RESYNC_HOMOGRAPHY				1
 #define TEST_RESYNC_CAPTURE					1
 
@@ -89,6 +90,12 @@ static int myboardID;
         static const int WIDTH = 640;  // Normal operation 640x480
         static const int HEIGHT = 480;  
 #endif
+
+// RESYNC
+#define MIN_AREA		20
+#define MAX_AREA   		80
+#define FRAME_RATE		30
+
 
 class picoApp : public ofBaseApp, public SSHKeyListener{
 	
@@ -174,12 +181,17 @@ public:
 	double framePeriod;
 
 	float myMatrix[16];
+	unsigned char qr_frame[230*230*3];
+
+	// RESYNC
 	float resyncMatrix[16];
 	ofPoint src[4];
 	ofPoint dst[4];
 	int nClick;
 	int setPositionByMouse;
+	int nFrame;
+	int nPos;
 
-	unsigned char qr_frame[230*230*3];
+
 };
 
