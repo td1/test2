@@ -173,15 +173,15 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set device ID");
     captureVid.setDeviceID(0);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set desired Frame Rate");
-    captureVid.setDesiredFrameRate(60);
+    captureVid.setDesiredFrameRate(FRAME_RATE);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set init Grabber");
     // captureVid.initGrabber(1280,720);
-    captureVid.initGrabber(320,240);
+    captureVid.initGrabber(CAPWIDTH,CAPHEIGHT);
     ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", 320, 240);
-    captureImg.allocate(320,240);
-    grayCaptureImg.allocate(320,240);
-    grayBackground.allocate(320,240);
-    grayDiff.allocate(320,240);
+    captureImg.allocate(CAPWIDTH,CAPHEIGHT);
+    grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
+    grayBackground.allocate(CAPWIDTH,CAPHEIGHT);
+    grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
 
     bUpdateBackground = true;
     threshold = 80;
@@ -227,7 +227,7 @@ void picoApp::update()
     bNewFrame = captureVid.isFrameNew();
     if (bNewFrame) {
       	// ofLog(OF_LOG_NOTICE, "new image captured");
-      	captureImg.setFromPixels(captureVid.getPixels(), 320,240);
+      	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
         grayCaptureImg = captureImg;
      	if (bUpdateBackground == true){
      		grayBackground = grayCaptureImg;
@@ -235,7 +235,7 @@ void picoApp::update()
         }
      	grayDiff.absDiff(grayBackground, grayCaptureImg);
         grayDiff.threshold(threshold);
-        contourFinder.findContours(grayDiff, 5, 20, 10, false);
+        contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 10, false);
         // if (nFrame >2*FRAME_RATE) {
         if (nFrame > 30) {
         	nFrame = 0;
