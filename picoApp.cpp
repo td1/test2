@@ -234,11 +234,15 @@ void picoApp::update()
      		bUpdateBackground = false;
         }
      	grayDiff.absDiff(grayBackground, grayCaptureImg);
+     	// grayDiff.absDiff(grayCaptureImg); /* differences with previous frame */
         grayDiff.threshold(threshold);
         contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 10, false);
+
         // if (nFrame >2*FRAME_RATE) {
         if (nFrame > 30) {
         	nFrame = 0;
+        	grayBackground = grayCaptureImg; // update the last frame
+
             if (nPos >= 6)
             	nPos = 0;
             else
@@ -277,16 +281,58 @@ void picoApp::draw(){
     // printf("DRAW RESOLUTION = %d x %d\n", ofGetWidth(), ofGetHeight());
     // omxPlayer.draw(0, 0, ofGetWidth(), ofGetHeight());
 
+#if 0 // moving objects
     ofFill();
     ofSetHexColor(0x000000);
     ofRect(0,0,640,80);
     ofSetHexColor(0xFFFFFF);
 	ofCircle(80+80*nPos,40,20);
-	// ofCircle(20,20,10);
-	// ofCircle(640-20,10,10);
-	// ofCircle(640-20,480-20,10);
-	// ofCircle(20,480-20,10);
-    
+#endif
+
+	// send out fixed position objects
+	int hoStart = 0;
+	int hoEnd = 0;
+	int voStart = 0;
+	int voEnd = 0;
+	switch (boardID) {
+		case ID_TD1:
+			hoEnd = 80;
+#ifdef PICO4
+			voEnd = 80;
+#endif
+	        break;
+	    case ID_TD2:
+	    	hoStart = 80;
+#ifdef PICO4
+			voEnd = 80;
+#endif
+			break;
+	    case ID_TD3:
+	    	hoEnd = 80;
+	    	voStart = 80;
+	    	break;
+	    case ID_TD4:
+	    	hoStart = 80;
+	    	voStart = 80;
+	    	break;
+	    default:;
+	}
+	ofFill();
+	ofSetHexColor(0x000000);
+	ofRect(0+hoStart,voStart,80,80);
+	ofRect(WIDTH-80-hoEnd,voStart,80,80);
+	ofRect(0+hoStart,HEIGHT-80-voEnd,80,80);
+	ofRect(WIDTH-80-hoEnd,HEIGHT-80-voEnd,80,80);
+
+	if (!nFrame) {
+		ofSetHexColor(0xFFFFFF);
+		ofCircle(40+hoStart,40+voStart,20);
+		ofCircle(WIDTH-40-hoEnd,40+voStart,20);
+		ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
+		ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
+	}
+
+
 #if 0 // RESYNC_ENABLE
     unsigned char *pixels = omxPlayer.getPixels();
     nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
@@ -557,6 +603,11 @@ void picoApp::draw(){
     ofDrawBitmapStringHighlight(omxPlayer.getInfo() + info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
 #endif
     
+// Display for testing only
+    captureImg.drawROI(80,80,320,240);
+
+
+
 }
 
 void picoApp::keyPressed  (int key)
