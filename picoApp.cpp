@@ -177,7 +177,7 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set init Grabber");
     // captureVid.initGrabber(1280,720);
     captureVid.initGrabber(CAPWIDTH,CAPHEIGHT);
-    ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", 320, 240);
+    ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", CAPWIDTH, CAPHEIGHT);
     captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayBackground.allocate(CAPWIDTH,CAPHEIGHT);
@@ -238,8 +238,11 @@ void picoApp::update()
         grayDiff.threshold(threshold);
         contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 10, false);
 
+        // if (contourFinder.nBlobs < 2)
+        //	grayBackground = grayCaptureImg; // update background with blankscreen
+
         // if (nFrame >2*FRAME_RATE) {
-        if (nFrame > 30) {
+        if (nFrame > 5) {
         	nFrame = 0;
         	grayBackground = grayCaptureImg; // update the last frame
 
@@ -324,6 +327,7 @@ void picoApp::draw(){
 	ofRect(0+hoStart,HEIGHT-80-voEnd,80,80);
 	ofRect(WIDTH-80-hoEnd,HEIGHT-80-voEnd,80,80);
 
+	// send once when nFrame = 0
 	if (!nFrame) {
 		ofSetHexColor(0xFFFFFF);
 		ofCircle(40+hoStart,40+voStart,20);
@@ -332,6 +336,12 @@ void picoApp::draw(){
 		ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
 	}
 
+#if 0 // send sequentially
+	ofSetHexColor(0xFFFFFF);
+	for (int i=0; i< nFrame; i++) {
+		ofCircle(40+hoStart+i*60,40+voStart,20);
+	}
+#endif
 
 #if 0 // RESYNC_ENABLE
     unsigned char *pixels = omxPlayer.getPixels();
@@ -604,8 +614,8 @@ void picoApp::draw(){
 #endif
     
 // Display for testing only
-    captureImg.drawROI(80,80,320,240);
-
+   // grayDiff.drawROI(80,80,320,240);
+   contourFinder.draw(80,80);
 
 
 }
