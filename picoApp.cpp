@@ -222,7 +222,8 @@ void picoApp::update()
 #else
 	#if TEST_RESYNC_CAPTURE
     bool bNewFrame = false;
-    ofBackground(100,100,100);
+    // ofBackground(100,100,100);
+    ofBackground(0,0,0);
     captureVid.update();
     bNewFrame = captureVid.isFrameNew();
     if (bNewFrame) {
@@ -615,8 +616,10 @@ void picoApp::draw(){
     
 // Display for testing only
    // grayDiff.drawROI(80,80,320,240);
-   contourFinder.draw(80,80);
-
+   // contourFinder.draw(80,80);
+   ofFill();
+   ofSetHexColor(0x000000);
+   ofRect(80,80,640-160,480-160);
 
 }
 
