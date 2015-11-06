@@ -230,7 +230,7 @@ void picoApp::update()
       	// ofLog(OF_LOG_NOTICE, "new image captured");
       	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
         grayCaptureImg = captureImg;
-     	if (bUpdateBackground == true){
+        if (bUpdateBackground == true){
      		grayBackground = grayCaptureImg;
      		bUpdateBackground = false;
         }
@@ -239,11 +239,24 @@ void picoApp::update()
         grayDiff.threshold(threshold);
         contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 10, false);
 
-        // if (contourFinder.nBlobs < 2)
-        //	grayBackground = grayCaptureImg; // update background with blankscreen
+        if (contourFinder.nBlobs < 1) {
+        	grayBackground = grayCaptureImg; // update background with blankscreen
+        	// bProjectBlobs = true;
+        	ofLog(OF_LOG_NOTICE, "update background then project blobs");
+        }
 
+        if (nFrame > 60) {
+        	bProjectBlobs = true; // delay and check background updated to project blobs
+
+        }
+        else
+        	nFrame ++;
+
+
+
+#if 0
         // if (nFrame >2*FRAME_RATE) {
-        if (nFrame > 5) {
+        // if (nFrame > 5) {
         	nFrame = 0;
         	grayBackground = grayCaptureImg; // update the last frame
 
@@ -254,6 +267,7 @@ void picoApp::update()
         }
         else
         	nFrame ++;
+#endif
     }
 	#endif
 
@@ -329,7 +343,8 @@ void picoApp::draw(){
 	ofRect(WIDTH-80-hoEnd,HEIGHT-80-voEnd,80,80);
 
 	// send once when nFrame = 0
-	if (!nFrame) {
+	if (bProjectBlobs) {
+		// bProjectBlobs = false;
 		ofSetHexColor(0xFFFFFF);
 		ofCircle(40+hoStart,40+voStart,20);
 		ofCircle(WIDTH-40-hoEnd,40+voStart,20);

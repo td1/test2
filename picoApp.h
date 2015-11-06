@@ -95,8 +95,8 @@ static int myboardID;
 #define MIN_AREA		20  	// BLOB SIZE MIN DETECTION
 #define MAX_AREA   		2500 	// BLOB SIZE MAX DETECTION
 #define FRAME_RATE		30  	// RESYNC FRAME RATE
-#define CAPWIDTH		1280	// RESYNC CAPTURE WIDTH
-#define CAPHEIGHT		720 	// RESYNC CAPTURE HEIGHT
+#define CAPWIDTH		640		// RESYNC CAPTURE WIDTH
+#define CAPHEIGHT		480 	// RESYNC CAPTURE HEIGHT
 
 
 class picoApp : public ofBaseApp, public SSHKeyListener{
@@ -143,6 +143,7 @@ public:
 
 	int 					threshold;
 	bool					bUpdateBackground;
+	bool 					bProjectBlobs;
 #endif
 
 	bool doUpdatePixels;
