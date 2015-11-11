@@ -376,17 +376,52 @@ void picoApp::draw(){
     glPopMatrix();
 #endif
     
-#if 0 // TEST_RESYNC_CAPTURE
+#if TEST_RESYNC_CAPTURE
     // display detected blob positions
-    for (int i=0; i < contourFinder.nBlobs; i++) {
+    int totBlobs = 0;
+    int varx = 0;
+    int vary = 0;
+    int blobPosX[4];
+    int blobPosY[4];
+
+    for (i=0; i < contourFinder.nBlobs; i++) {
     	int blobX = contourFinder.blobs[i].centroid.x;
     	int blobY = contourFinder.blobs[i].centroid.y;
+    	totBlobs ++;
+    	/* for debug only
     	int blobA = contourFinder.blobs[i].area;
     	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
     	ofSetHexColor(0xFF0000);
     	ofDrawBitmapString("+", contourFinder.blobs[i].centroid.x, contourFinder.blobs[i].centroid.y);
-    	ofSetHexColor(0xFFFFFF);
+    	ofSetHexColor(0xFFFFFF); */
+    	blobPosX[i] = blobX;
+    	blobPosY[i] = blobY;
     }
+    if (totBlobs == 8) {
+    	for (i=0; i < 8; i++) {
+    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	}
+    	for (i=0; i<8; i++) {
+            for (j=i+1; j<8; j++) {
+                if (blobPosX[i]>blobPosX[j]) {
+                    varx = blobPosX[i];
+                    vary = blobPosY[i];
+                    blobPosX[i] = blobPosX[j];
+                    blobPosY[i] = blobPosY[j];
+                    blobPosX[j] = varx;
+                    blobPosY[j] = vary;
+                }
+            }
+    	}
+    	printf("\n");
+    	for (i=0; i < 8; i++) {
+    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	}
+    }
+    else {
+    	// printf("invalid number of blobs %d \n", totBlobs);
+    }
+
 #endif
 
 #if NO_HOMOGRAPHY_TRANFORM
