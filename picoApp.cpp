@@ -184,7 +184,10 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
 
     bUpdateBackground = false;
-    threshold = 80;
+    threshold = 90;
+    ofHideCursor();
+    sendBlobsEnable = false;
+
 #endif
     
     if (!pixelOutput.isAllocated()) {
@@ -194,32 +197,72 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 
 void picoApp::update()
 {
-
     bool bNewFrame = false;
-    // ofBackground(100,100,100);
+
     ofBackground(0,0,0);
     captureVid.update();
     bNewFrame = captureVid.isFrameNew();
     if (bNewFrame) {
-    	if (nFrame < 10) {
-    		ofLog(OF_LOG_NOTICE, "waiting to get the background %d" , nFrame);
-    	}
-    	else if (nFrame == 10) {
+    	switch (nFrame) {
+    	case 0:
     		captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
-    		grayBackground = captureImg;
-    		ofLog(OF_LOG_NOTICE, "got background %d" , nFrame);
-    	}
-    	else if (nFrame > 40) {
+    		grayBackgroundSaved = captureImg;
+    		nFrame ++;
+    		break;
+    	case 1:
+    	case 2:
+    	case 3:
+    	case 4:
+    		captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+       		grayBackground = captureImg;
+
+      		grayDiff.absDiff(grayBackground, grayBackgroundSaved);
+      		grayDiff.threshold(20);
+      		contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 5, false);
+      		if (contourFinder.nBlobs) {
+      			if (nFrame == 4) {
+      				ofLog(OF_LOG_NOTICE, ">>>>> background is not valid, using clear one...state = %d", nFrame);
+      				grayBackground = grayBackgroundSaved;
+      			}
+      			else {
+      				ofLog(OF_LOG_NOTICE, ">>>>> background is not valid, keep trying...state = %d", nFrame);
+      			}
+      			nFrame ++;
+      		}
+      		else {
+      			ofLog(OF_LOG_NOTICE, ">>>>> background is valid, update new background...state = %d", nFrame);
+      			nFrame = 5;
+      		}
+      		break;
+    	case 5:
+   			sendBlobsEnable = true;
+       		nFrame ++;
+       		break;
+    	case 6:
+    		nFrame ++;
+    		break;
+    	case 7:
     		captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
     		grayCaptureImg = captureImg;
     		grayDiff.absDiff(grayBackground, grayCaptureImg);
-    		grayDiff.threshold(60);
-    		contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 10, false);
-    		ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
-    	}
-
-    	if (nFrame < 60)
+    		grayDiff.threshold(80);
+    		contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 20, false);
+    		if (contourFinder.nBlobs) {
+    			ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    		}
     		nFrame ++;
+    		sendBlobsEnable = false;
+    		break;
+    	case 8:
+    		nFrame ++;
+    		break;
+    	case 9:
+    	    nFrame = 1;
+    	    break;
+
+    	default:
+    		ofLog(OF_LOG_NOTICE, "unhandled case, frame = %d", nFrame);
+    	}
     }
 
   	omxPlayer.updatePixels();
@@ -266,9 +309,8 @@ void picoApp::draw(){
 	ofRect(0+hoStart,HEIGHT-80-voEnd,80,80);
 	ofRect(WIDTH-80-hoEnd,HEIGHT-80-voEnd,80,80);
 
-	// send once when nFrame = 0
-	// if (bProjectBlobs) {
-	if (nFrame > 20) { // start send blobs out after waiting for 20 frames
+	if (sendBlobsEnable == true) {
+		// printf("sendBlobsEnable, nFrame = %d", nFrame);
 		// bProjectBlobs = false;
 		ofSetHexColor(0xFFFFFF);
 		ofCircle(40+hoStart,40+voStart,20);
@@ -378,16 +420,18 @@ void picoApp::draw(){
     
 #if TEST_RESYNC_CAPTURE
     // display detected blob positions
-    int totBlobs = 0;
     int varx = 0;
     int vary = 0;
-    int blobPosX[4];
-    int blobPosY[4];
+    int blobPosX[8];
+    int blobPosY[8];
 
     for (i=0; i < contourFinder.nBlobs; i++) {
     	int blobX = contourFinder.blobs[i].centroid.x;
     	int blobY = contourFinder.blobs[i].centroid.y;
-    	totBlobs ++;
+
+    	int blobA = contourFinder.blobs[i].area;
+    	// ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+
     	/* for debug only
     	int blobA = contourFinder.blobs[i].area;
     	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
@@ -397,10 +441,11 @@ void picoApp::draw(){
     	blobPosX[i] = blobX;
     	blobPosY[i] = blobY;
     }
-    if (totBlobs == 8) {
-    	for (i=0; i < 8; i++) {
-    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
-    	}
+
+    if (contourFinder.nBlobs == 8) {
+//    	for (i=0; i < 8; i++) {
+//    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+//    	}
     	for (i=0; i<8; i++) {
             for (j=i+1; j<8; j++) {
                 if (blobPosX[i]>blobPosX[j]) {
@@ -413,10 +458,24 @@ void picoApp::draw(){
                 }
             }
     	}
-    	printf("\n");
-    	for (i=0; i < 8; i++) {
-    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+//    	printf("\n");
+//    	for (i=0; i < 8; i++) {
+//    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+//    	}
+    	for (i=0; i<8; i+=2) {
+    		if (blobPosY[i] > blobPosY[i+1]) {
+    			varx = blobPosX[i];
+    			vary = blobPosY[i];
+    			blobPosX[i] = blobPosX[i+1];
+    			blobPosY[i] = blobPosY[i+1];
+    			blobPosX[i+1] = varx;
+    			blobPosY[i+1] = vary;
+    		}
     	}
+//    	printf("\n");
+//    	for (i=0; i < 8; i++) {
+//    	    printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+//    	}
     }
     else {
     	// printf("invalid number of blobs %d \n", totBlobs);
@@ -438,15 +497,19 @@ void picoApp::draw(){
     ofDrawBitmapStringHighlight(omxPlayer.getInfo() + info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
 #endif
     
+    /////////////////////////////////////////////
     // Display for testing only
-    if (nFrame > 50)
-    	grayDiff.drawROI(80,80,640-160,480-160);
-    // contourFinder.draw(80,80);
-    else {
-        ofFill();
-        ofSetHexColor(0x000000);
-        ofRect(80,80,640-160,480-160);
-    }
+    /////////////////////////////////////////////
+    // if (nFrame > 100) {
+    grayBackground.drawROI(80,80,640-160,480-160);
+    // grayDiff.drawROI(80,80,640-160,480-160);
+    	// contourFinder.draw(80,80);
+    // }
+    // else {
+        // ofFill();
+        // ofSetHexColor(0x000000);
+        // ofRect(80,80,640-160,480-160);
+    // }
 }
 
 void picoApp::keyPressed  (int key)
