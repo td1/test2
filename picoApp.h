@@ -137,8 +137,7 @@ public:
 	ofVideoGrabber 			captureVid;
 	ofxCvColorImage 		captureImg;
 	ofxCvGrayscaleImage 	grayCaptureImg;
-	ofxCvGrayscaleImage 	grayBackground;
-	ofxCvGrayscaleImage 	grayBackgroundSaved;
+	ofxCvGrayscaleImage 	grayCaptureImgSaved;
 	ofxCvGrayscaleImage 	grayDiff;
 	ofxCvContourFinder 		contourFinder;
 

@@ -169,24 +169,22 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
 
 #if TEST_RESYNC_CAPTURE
     captureVid.setVerbose(true);
-    // captureVid.initGrabber(width,height);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set device ID");
     captureVid.setDeviceID(0);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set desired Frame Rate");
     captureVid.setDesiredFrameRate(FRAME_RATE);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set init Grabber");
-    // captureVid.initGrabber(1280,720);
     captureVid.initGrabber(CAPWIDTH,CAPHEIGHT);
     ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", CAPWIDTH, CAPHEIGHT);
     captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
-    grayBackground.allocate(CAPWIDTH,CAPHEIGHT);
+    grayCaptureImgSaved.allocate(CAPWIDTH,CAPHEIGHT);
     grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
 
-    bUpdateBackground = false;
     threshold = 90;
     ofHideCursor();
     sendBlobsEnable = false;
+    bUpdateBackground = true;
 
 #endif
     
@@ -202,6 +200,33 @@ void picoApp::update()
     ofBackground(0,0,0);
     captureVid.update();
     bNewFrame = captureVid.isFrameNew();
+
+    if (bNewFrame) {
+		captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	grayCaptureImg = captureImg;
+
+    	if (bUpdateBackground == true) {
+    		// at least update the first time
+    		grayCaptureImgSaved = grayCaptureImg;
+    		bUpdateBackground = false;
+    	}
+
+    	grayDiff.absDiff(grayCaptureImgSaved, grayCaptureImg);
+    	grayDiff.threshold(80);
+    	contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 20, false);
+    	if (contourFinder.nBlobs) {
+    		ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    	}
+    	// ofLog(OF_LOG_NOTICE, "getting grayCaptureImgSaved at frame = %d", nFrame);
+    	grayCaptureImgSaved = grayCaptureImg;
+    	nFrame ++;
+    	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
+    	sendBlobsEnable = (sendBlobsEnable == true ? false : true);
+    	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
+    }
+
+
+#if 0
     if (bNewFrame) {
     	switch (nFrame) {
     	case 0:
@@ -251,7 +276,7 @@ void picoApp::update()
     			ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
     		}
     		nFrame ++;
-    		sendBlobsEnable = false;
+    		sendBlobsEnable = ~sendBlobsEnable;
     		break;
     	case 8:
     		nFrame ++;
@@ -264,6 +289,7 @@ void picoApp::update()
     		ofLog(OF_LOG_NOTICE, "unhandled case, frame = %d", nFrame);
     	}
     }
+#endif
 
   	omxPlayer.updatePixels();
     if (!pixelOutput.isAllocated()) {
@@ -442,7 +468,7 @@ void picoApp::draw(){
     	blobPosY[i] = blobY;
     }
 
-    if (contourFinder.nBlobs == 8) {
+    if (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) {
 //    	for (i=0; i < 8; i++) {
 //    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
 //    	}
@@ -501,8 +527,9 @@ void picoApp::draw(){
     // Display for testing only
     /////////////////////////////////////////////
     // if (nFrame > 100) {
-    grayBackground.drawROI(80,80,640-160,480-160);
+    // grayBackground.drawROI(80,80,640-160,480-160);
     // grayDiff.drawROI(80,80,640-160,480-160);
+    // grayCaptureImg.drawROI(80,80,640-160,480-160);
     	// contourFinder.draw(80,80);
     // }
     // else {
