@@ -181,6 +181,12 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     grayCaptureImgSaved.allocate(CAPWIDTH,CAPHEIGHT);
     grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
 
+    ofo2.set(1,0,640,0,1,0,0,0,1);
+    printf("offset o2 = ");
+    for (int i=0; i<9; i++)
+    	printf("%4.2lf ", ofo2[i]);
+    printf("\n");
+
     threshold = 90;
     ofHideCursor();
     sendBlobsEnable = false;
@@ -469,6 +475,7 @@ void picoApp::draw(){
     }
 
     if (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) {
+
 //    	for (i=0; i < 8; i++) {
 //    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
 //    	}
@@ -498,14 +505,113 @@ void picoApp::draw(){
     			blobPosY[i+1] = vary;
     		}
     	}
-//    	printf("\n");
-//    	for (i=0; i < 8; i++) {
-//    	    printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
-//    	}
+    	printf("\n");
+    	for (i=0; i < 8; i++) {
+    	    printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	}
+
+    	updateBlobs = true;
+    	for (i=0; i < 8; i++) {
+    		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
+    			printf("blobPos are invalid...skip updating");
+    			updateBlobs = false;
+    			break;
+    		}
+    	}
+
     }
     else {
     	// printf("invalid number of blobs %d \n", totBlobs);
+    	updateBlobs = false;
     }
+
+#endif
+
+#if TEST_RESYNC_HOMOGRAPHY
+    unsigned char *pixels = omxPlayer.getPixels();
+    nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
+
+    src[0].set(40+hoStart,40+voStart);
+    src[1].set(40+hoStart,HEIGHT-40-voEnd);
+    src[2].set(WIDTH-40-hoEnd,40+voStart);
+    src[3].set(WIDTH-40-hoEnd,HEIGHT-40-voEnd);
+
+    switch (boardID) {
+    	case ID_TD1:
+    		resyncMatrix[0] = 1; resyncMatrix[1] = 0; resyncMatrix[2] = 0; resyncMatrix[3] = 0;
+    		resyncMatrix[4] = 0; resyncMatrix[5] = 1; resyncMatrix[6] = 0; resyncMatrix[7] = 0;
+    		resyncMatrix[8] = 0; resyncMatrix[9] = 0; resyncMatrix[10] = 1; resyncMatrix[11] = 0;
+    		resyncMatrix[12] = 0; resyncMatrix[13] = 0; resyncMatrix[14] = 0; resyncMatrix[15] = 1;
+            break;
+    	case ID_TD2:
+    		// ofo2.set(1,0,640,0,1,0,0,0,1);
+
+    		if (updateBlobs == true) {
+    			dst[0].set(blobPosX[0],blobPosY[0]);
+    			dst[1].set(blobPosX[1],blobPosY[1]);
+    			dst[2].set(blobPosX[2],blobPosY[2]);
+    			dst[3].set(blobPosX[3],blobPosY[3]);
+    			printf("dst set1 = ");
+    			for (i=0; i<8; i++)
+  			        printf("%4.2lf ", dst[i]);
+    			printf("\n");
+
+    			ofh1 = getResyncHomography3x3(src, dst);
+    			printf("h1 = ");
+    			for (i=0; i<9; i++)
+   			        printf("%4.2lf ", ofh1[i]);
+    			printf("\n");
+
+    			dst[0].set(blobPosX[4],blobPosY[4]);
+    			dst[1].set(blobPosX[5],blobPosY[5]);
+    			dst[2].set(blobPosX[6],blobPosY[6]);
+    			dst[3].set(blobPosX[7],blobPosY[7]);
+    			printf("dst set2 = ");
+    			for (i=0; i<8; i++)
+    				printf("%4.2lf ", dst[i]);
+    			printf("\n");
+
+    			ofh2inv = getResyncHomography3x3(dst,src);
+    			printf("h2inv = ");
+    			for (i=0; i<9; i++)
+   			        printf("%4.2lf ", ofh2inv[i]);
+    			printf("\n");
+
+    			Hc = ofh2inv*ofh1*ofo2;
+    			printf("Hc = ");
+    			for (i=0; i<9; i++)
+    				printf("%4.2lf ", Hc[i]);
+    			printf("\n");
+
+    			resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
+    			resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
+    			resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 1; resyncMatrix[11] = 0;
+    			resyncMatrix[12] = Hc[6];    resyncMatrix[13] = Hc[7];    resyncMatrix[14] = 0; resyncMatrix[15] = Hc[8];
+
+    			printf("resyncMatrix = ");
+    			for (i=0; i<16; i++)
+    			    printf("%4.2lf ", resyncMatrix[i]);
+    			printf("\n");
+    		}
+    		break;
+    	case ID_TD3:
+    	   	break;
+    	case ID_TD4:
+    	   	break;
+    	default:;
+    }
+
+
+
+    // output
+#if 0
+    pixelOutput.loadData(pixels, width, height, GL_RGBA);
+    glPushMatrix();
+    glMultMatrixf(resyncMatrix);
+    glTranslatef(0,0,0);
+    pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
+    glPopMatrix();
+#endif
 
 #endif
 

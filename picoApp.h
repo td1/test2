@@ -196,6 +196,12 @@ public:
 	int nPos;
 
 	bool sendBlobsEnable;
+	bool updateBlobs;
+
+	ofMatrix3x3 ofh1;
+	ofMatrix3x3 ofh2inv;
+	ofMatrix3x3 ofo2;
+	ofMatrix3x3 Hc;
 
 
 };
