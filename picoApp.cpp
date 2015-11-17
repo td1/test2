@@ -476,9 +476,19 @@ void picoApp::draw(){
 
     if (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) {
 
-//    	for (i=0; i < 8; i++) {
-//    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
-//    	}
+    	updateBlobs = true;
+    	for (i=0; i < 8; i++) {
+    		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
+    	    	printf("\n>>>>> blobPos are invalid...skip updating");
+    	    	updateBlobs = false;
+    	    	break;
+    	    }
+    	}
+
+    	printf("\nblobPos RAW = ");
+    	for (i=0; i < 8; i++) {
+    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	}
     	for (i=0; i<8; i++) {
             for (j=i+1; j<8; j++) {
                 if (blobPosX[i]>blobPosX[j]) {
@@ -491,10 +501,11 @@ void picoApp::draw(){
                 }
             }
     	}
-//    	printf("\n");
-//    	for (i=0; i < 8; i++) {
-//    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
-//    	}
+
+    	printf("\nblobPos Sorted X = ");
+    	for (i=0; i < 8; i++) {
+    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	}
     	for (i=0; i<8; i+=2) {
     		if (blobPosY[i] > blobPosY[i+1]) {
     			varx = blobPosX[i];
@@ -505,20 +516,12 @@ void picoApp::draw(){
     			blobPosY[i+1] = vary;
     		}
     	}
-    	printf("\n");
+
+    	printf("\nblobPos Sorted Y = ");
     	for (i=0; i < 8; i++) {
     	    printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
     	}
-
-    	updateBlobs = true;
-    	for (i=0; i < 8; i++) {
-    		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
-    			printf("blobPos are invalid...skip updating");
-    			updateBlobs = false;
-    			break;
-    		}
-    	}
-
+    	printf("\n");
     }
     else {
     	// printf("invalid number of blobs %d \n", totBlobs);
@@ -547,13 +550,18 @@ void picoApp::draw(){
     		// ofo2.set(1,0,640,0,1,0,0,0,1);
 
     		if (updateBlobs == true) {
+    			printf("src = ");
+    			for (i=0; i<4; i++)
+    				printf("(%4.2f,%4.2f) ", src[i].x, src[i].y);
+    			printf("\n");
+
     			dst[0].set(blobPosX[0],blobPosY[0]);
     			dst[1].set(blobPosX[1],blobPosY[1]);
     			dst[2].set(blobPosX[2],blobPosY[2]);
     			dst[3].set(blobPosX[3],blobPosY[3]);
     			printf("dst set1 = ");
-    			for (i=0; i<8; i++)
-  			        printf("%4.2lf ", dst[i]);
+    			for (i=0; i<4; i++)
+    				printf("(%4.2f,%4.2f) ", dst[i].x, dst[i].y);
     			printf("\n");
 
     			ofh1 = getResyncHomography3x3(src, dst);
@@ -567,8 +575,8 @@ void picoApp::draw(){
     			dst[2].set(blobPosX[6],blobPosY[6]);
     			dst[3].set(blobPosX[7],blobPosY[7]);
     			printf("dst set2 = ");
-    			for (i=0; i<8; i++)
-    				printf("%4.2lf ", dst[i]);
+    			for (i=0; i<4; i++)
+    				printf("(%4.2f,%4.2f) ", dst[i].x, dst[i].y);
     			printf("\n");
 
     			ofh2inv = getResyncHomography3x3(dst,src);
@@ -592,6 +600,8 @@ void picoApp::draw(){
     			for (i=0; i<16; i++)
     			    printf("%4.2lf ", resyncMatrix[i]);
     			printf("\n");
+
+    			updateBlobs = false;
     		}
     		break;
     	case ID_TD3:
@@ -600,8 +610,6 @@ void picoApp::draw(){
     	   	break;
     	default:;
     }
-
-
 
     // output
 #if 0
