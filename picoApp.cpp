@@ -44,9 +44,10 @@ void picoApp::setup()
 #endif
     
 #ifdef DEBUG_HOMOGRAPHY
-videoPath = ofToDataPath("./testpattern.mp4", true);
-#else
-videoPath = ofToDataPath("./testvideo.mp4", true);
+// videoPath = ofToDataPath("./testpattern.mp4", true);
+    videoPath = ofToDataPath("../../../video/grid_640x480.mp4", true);
+// #else
+// videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif    
     
 // #if RESYNC_ENABLE
@@ -182,15 +183,23 @@ videoPath = ofToDataPath("./testvideo.mp4", true);
     grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
 
     ofo2.set(1,0,640,0,1,0,0,0,1);
-    printf("offset o2 = ");
-    for (int i=0; i<9; i++)
-    	printf("%4.2lf ", ofo2[i]);
-    printf("\n");
+//    printf("offset o2 = ");
+//    for (int i=0; i<9; i++)
+//    	printf("%4.2lf ", ofo2[i]);
+//    printf("\n");
 
     threshold = 90;
     ofHideCursor();
     sendBlobsEnable = false;
     bUpdateBackground = true;
+
+    videoEnable = false; // HUNG TEMP
+    updatedMatrix = false;
+
+    resyncMatrix[0] = 1; resyncMatrix[1] = 0; resyncMatrix[2] = 0; resyncMatrix[3] = 0;
+    resyncMatrix[4] = 0; resyncMatrix[5] = 1; resyncMatrix[6] = 0; resyncMatrix[7] = 0;
+    resyncMatrix[8] = 0; resyncMatrix[9] = 0; resyncMatrix[10]= 1; resyncMatrix[11]= 0;
+    resyncMatrix[12]= 0; resyncMatrix[13]= 0; resyncMatrix[14]= 0; resyncMatrix[15]= 1;
 
 #endif
     
@@ -220,14 +229,16 @@ void picoApp::update()
     	grayDiff.absDiff(grayCaptureImgSaved, grayCaptureImg);
     	grayDiff.threshold(80);
     	contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 20, false);
-    	if (contourFinder.nBlobs) {
-    		ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
-    	}
+    	// if (contourFinder.nBlobs) {
+    	//     ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    	// }
     	// ofLog(OF_LOG_NOTICE, "getting grayCaptureImgSaved at frame = %d", nFrame);
     	grayCaptureImgSaved = grayCaptureImg;
     	nFrame ++;
     	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
-    	sendBlobsEnable = (sendBlobsEnable == true ? false : true);
+    	// HUNG TEST disable sendBlobs after sending out video
+    	if (videoEnable == false)
+    		sendBlobsEnable = (sendBlobsEnable == true ? false : true);
     	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
     }
 
@@ -345,10 +356,14 @@ void picoApp::draw(){
 		// printf("sendBlobsEnable, nFrame = %d", nFrame);
 		// bProjectBlobs = false;
 		ofSetHexColor(0xFFFFFF);
-		ofCircle(40+hoStart,40+voStart,20);
-		ofCircle(WIDTH-40-hoEnd,40+voStart,20);
-		ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
-		ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
+//		ofCircle(40+hoStart,40+voStart,20);
+//		ofCircle(WIDTH-40-hoEnd,40+voStart,20);
+//		ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
+//		ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
+		ofCircle(120,40+voStart,20);
+		ofCircle(WIDTH-40-80,40+voStart,20);
+		ofCircle(40+80,HEIGHT-40-voEnd,20);
+		ofCircle(WIDTH-40-80,HEIGHT-40-voEnd,20);
 	}
 
 #if ENABLE_BLENDING    
@@ -474,21 +489,23 @@ void picoApp::draw(){
     	blobPosY[i] = blobY;
     }
 
-    if (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) {
 
-    	updateBlobs = true;
+    // videoEnable = false;
+    if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
+
+    	updateMatrix = true;
     	for (i=0; i < 8; i++) {
     		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
     	    	printf("\n>>>>> blobPos are invalid...skip updating");
-    	    	updateBlobs = false;
+    	    	updateMatrix = false;
     	    	break;
     	    }
     	}
 
-    	printf("\nblobPos RAW = ");
-    	for (i=0; i < 8; i++) {
-    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
-    	}
+    	// printf("\nblobPos RAW = ");
+    	// for (i=0; i < 8; i++) {
+    	// 	printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	// }
     	for (i=0; i<8; i++) {
             for (j=i+1; j<8; j++) {
                 if (blobPosX[i]>blobPosX[j]) {
@@ -502,10 +519,10 @@ void picoApp::draw(){
             }
     	}
 
-    	printf("\nblobPos Sorted X = ");
-    	for (i=0; i < 8; i++) {
-    		printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
-    	}
+    	// printf("\nblobPos Sorted X = ");
+    	// for (i=0; i < 8; i++) {
+    	// 	printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	// }
     	for (i=0; i<8; i+=2) {
     		if (blobPosY[i] > blobPosY[i+1]) {
     			varx = blobPosX[i];
@@ -517,16 +534,50 @@ void picoApp::draw(){
     		}
     	}
 
-    	printf("\nblobPos Sorted Y = ");
-    	for (i=0; i < 8; i++) {
-    	    printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	/* getMatrixDistance to determine updating the homography matrix */
+    	/*
+    	distanceX = getMaxDistance(blobPosX, blobPosSavedX);
+    	distanceY = getMaxDistance(blobPosX, blobPosSavedY);
+
+    	printf("Max distanceX = %4.2f\n", distanceX);
+    	printf("Max distanceY = %4.2f\n", distanceY);
+
+    	if (distanceX > 100 || distanceY > 100) {
+    		printf("X %4.2f\n", distanceY);
+    		updateBlobs = false;
     	}
-    	printf("\n");
+    	*/
+
+    	/*printf("\nblobPos Sorted Y = ");
+    	for (i=0; i < 8; i++) {
+    	     printf("(%d,%d) ", blobPosX[i], blobPosY[i]);
+    	}
+    	printf("\n");*/
+
+    	// HUNG TEST ONLY - UPDATE MATRIX ONLY ONCE
+    	/*if (updateMatrix == true) {
+
+    		updateMatrix = false;
+    	}
+    	else {
+    		// videoEnable = false; // can be removed in the future?
+    	}*/
+
+
+
     }
     else {
     	// printf("invalid number of blobs %d \n", totBlobs);
-    	updateBlobs = false;
+    	updateMatrix = false;
     }
+
+    // HUNG TEST ONLY - WILL ENABLE VIDEO AGAIN AFTER TIMEOUT
+    if (nFrame == 100) {
+    	printf(">>>>> send out video after timeout for test at frame = %d\n", nFrame);
+    	videoEnable = true;
+        sendBlobsEnable = false;
+    }
+
 
 #endif
 
@@ -534,23 +585,20 @@ void picoApp::draw(){
     unsigned char *pixels = omxPlayer.getPixels();
     nChannels = 4; // omxPlayer.getPixelsRef().getNumChannels();
 
-    src[0].set(40+hoStart,40+voStart);
-    src[1].set(40+hoStart,HEIGHT-40-voEnd);
-    src[2].set(WIDTH-40-hoEnd,40+voStart);
-    src[3].set(WIDTH-40-hoEnd,HEIGHT-40-voEnd);
+
 
     switch (boardID) {
     	case ID_TD1:
-    		resyncMatrix[0] = 1; resyncMatrix[1] = 0; resyncMatrix[2] = 0; resyncMatrix[3] = 0;
-    		resyncMatrix[4] = 0; resyncMatrix[5] = 1; resyncMatrix[6] = 0; resyncMatrix[7] = 0;
-    		resyncMatrix[8] = 0; resyncMatrix[9] = 0; resyncMatrix[10] = 1; resyncMatrix[11] = 0;
-    		resyncMatrix[12] = 0; resyncMatrix[13] = 0; resyncMatrix[14] = 0; resyncMatrix[15] = 1;
-            break;
+    		// break;
     	case ID_TD2:
     		// ofo2.set(1,0,640,0,1,0,0,0,1);
 
-    		if (updateBlobs == true) {
-    			printf("src = ");
+    		if (updateMatrix == true) {
+    			src[0].set(40,40);
+    			src[1].set(40,440);
+    			src[2].set(560,40);
+    			src[3].set(560,440);
+    			printf("src set1 = ");
     			for (i=0; i<4; i++)
     				printf("(%4.2f,%4.2f) ", src[i].x, src[i].y);
     			printf("\n");
@@ -561,13 +609,23 @@ void picoApp::draw(){
     			dst[3].set(blobPosX[3],blobPosY[3]);
     			printf("dst set1 = ");
     			for (i=0; i<4; i++)
-    				printf("(%4.2f,%4.2f) ", dst[i].x, dst[i].y);
+    			    printf("(%4.2f,%4.2f) ", dst[i].x, dst[i].y);
     			printf("\n");
 
-    			ofh1 = getResyncHomography3x3(src, dst);
-    			printf("h1 = ");
-    			for (i=0; i<9; i++)
-   			        printf("%4.2lf ", ofh1[i]);
+    			ofh1 = getResyncHomography3x3(src,dst);
+    			ofh1inv = getResyncHomography3x3(dst,src);
+//    			printf("h1 = ");
+//    			for (i=0; i<9; i++)
+//   			        printf("%4.2lf ", ofh1[i]);
+//    			printf("\n");
+
+    			src[0].set(120,40);
+    			src[1].set(120,440);
+    			src[2].set(640,40);
+    			src[3].set(640,440);
+    			printf("src set2 = ");
+    			for (i=0; i<4; i++)
+    				printf("(%4.2f,%4.2f) ", src[i].x, src[i].y);
     			printf("\n");
 
     			dst[0].set(blobPosX[4],blobPosY[4]);
@@ -576,32 +634,46 @@ void picoApp::draw(){
     			dst[3].set(blobPosX[7],blobPosY[7]);
     			printf("dst set2 = ");
     			for (i=0; i<4; i++)
-    				printf("(%4.2f,%4.2f) ", dst[i].x, dst[i].y);
+    			 	printf("(%4.2f,%4.2f) ", dst[i].x, dst[i].y);
     			printf("\n");
 
+    			ofh2 = getResyncHomography3x3(src,dst);
     			ofh2inv = getResyncHomography3x3(dst,src);
-    			printf("h2inv = ");
-    			for (i=0; i<9; i++)
-   			        printf("%4.2lf ", ofh2inv[i]);
-    			printf("\n");
 
-    			Hc = ofh2inv*ofh1*ofo2;
-    			printf("Hc = ");
-    			for (i=0; i<9; i++)
-    				printf("%4.2lf ", Hc[i]);
-    			printf("\n");
+//    			printf("h2inv = ");
+//    			for (i=0; i<9; i++)
+//   			       printf("%4.2lf ", ofh2inv[i]);
+//    			printf("\n");
+
+    			// Hc = ofh2inv*ofh1*ofo2;
+    			// Hc = ofh2inv*ofh1;
+
+    			if (boardID == ID_TD2) {
+    				Hc = ofh2inv*ofh1;
+    			}
+    			else {
+    				Hc = ofh1inv*ofh2;
+    			}
+
+//    			printf("Hc = ");
+//    			for (i=0; i<9; i++)
+//    				printf("%4.2lf ", Hc[i]);
+//    			printf("\n");
 
     			resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
     			resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
-    			resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 1; resyncMatrix[11] = 0;
-    			resyncMatrix[12] = Hc[6];    resyncMatrix[13] = Hc[7];    resyncMatrix[14] = 0; resyncMatrix[15] = Hc[8];
+    			resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 0; resyncMatrix[11] = 0;
+    			resyncMatrix[12] = Hc[6];resyncMatrix[13] = Hc[7];resyncMatrix[14]= 0; resyncMatrix[15] = Hc[8];
 
-    			printf("resyncMatrix = ");
+    			printf(">>>>>>>>>>>>> Updated resyncMatrix ONCE = ");
+    			updateMatrix = false;
+    			// updatedMatrix = true;
+
     			for (i=0; i<16; i++)
     			    printf("%4.2lf ", resyncMatrix[i]);
     			printf("\n");
 
-    			updateBlobs = false;
+
     		}
     		break;
     	case ID_TD3:
@@ -612,13 +684,27 @@ void picoApp::draw(){
     }
 
     // output
-#if 0
-    pixelOutput.loadData(pixels, width, height, GL_RGBA);
-    glPushMatrix();
-    glMultMatrixf(resyncMatrix);
-    glTranslatef(0,0,0);
-    pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
-    glPopMatrix();
+#if 1
+    // check to update reSyncMatrix
+
+
+
+
+
+
+    if (videoEnable) {
+    	updatedMatrix = true;
+
+    	pixelOutput.loadData(pixels, width, height, GL_RGBA);
+    	glPushMatrix();
+    	glMultMatrixf(resyncMatrix);
+    	glTranslatef(0,0,0);
+    	pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
+    	glPopMatrix();
+    }
+    else {
+    	// printf("resyncMatrix is not ready, mute video\n");
+    }
 #endif
 
 #endif

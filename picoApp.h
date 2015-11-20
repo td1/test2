@@ -33,7 +33,7 @@ extern "C" {
 #define TEST_RESYNC_CAPTURE					1
 
 /* DEBUG/TEST SWITCH */
-//#define DEBUG_HOMOGRAPHY                1
+#define DEBUG_HOMOGRAPHY               		1
 //#define OUTPUT_RES_1280_720             1
 //#define OUTPUT_RES_1280_960             1
 
@@ -196,10 +196,17 @@ public:
 	int nPos;
 
 	bool sendBlobsEnable;
-	bool updateBlobs;
+
+	bool videoEnable;
+	bool reSyncEnable;
+
+	bool updateMatrix;
+	bool updatedMatrix;
 
 	ofMatrix3x3 ofh1;
 	ofMatrix3x3 ofh2inv;
+	ofMatrix3x3 ofh2; 		// add for test only
+	ofMatrix3x3 ofh1inv; 	// add for test only
 	ofMatrix3x3 ofo2;
 	ofMatrix3x3 Hc;
 
