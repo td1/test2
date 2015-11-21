@@ -237,7 +237,7 @@ void picoApp::update()
     	nFrame ++;
     	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
     	// HUNG TEST disable sendBlobs after sending out video
-    	if (videoEnable == false)
+    	// ????????????? why is black out with this? if (videoEnable == false)
     		sendBlobsEnable = (sendBlobsEnable == true ? false : true);
     	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
     }
@@ -648,11 +648,21 @@ void picoApp::draw(){
     			// Hc = ofh2inv*ofh1*ofo2;
     			// Hc = ofh2inv*ofh1;
 
-    			if (boardID == ID_TD2) {
-    				Hc = ofh2inv*ofh1;
+    			if (boardID == ID_TD1) {
+    				// Hc = ofh2inv*ofh1;
+    				// resyncMatrix is unity
+//    	   			resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
+//    	    		resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
+//    	    		resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 0; resyncMatrix[11] = 0;
+//    	    		resyncMatrix[12] = Hc[6];resyncMatrix[13] = Hc[7];resyncMatrix[14]= 0; resyncMatrix[15] = Hc[8];
     			}
     			else {
-    				Hc = ofh1inv*ofh2;
+    				Hc = ofh2inv*ofh1;
+
+      	   			resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
+     	    		resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
+      	    		resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 0; resyncMatrix[11] = 0;
+      	    		resyncMatrix[12] = Hc[6];resyncMatrix[13] = Hc[7];resyncMatrix[14]= 0; resyncMatrix[15] = Hc[8];
     			}
 
 //    			printf("Hc = ");
@@ -660,12 +670,12 @@ void picoApp::draw(){
 //    				printf("%4.2lf ", Hc[i]);
 //    			printf("\n");
 
-    			resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
-    			resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
-    			resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 0; resyncMatrix[11] = 0;
-    			resyncMatrix[12] = Hc[6];resyncMatrix[13] = Hc[7];resyncMatrix[14]= 0; resyncMatrix[15] = Hc[8];
+//    			resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
+//    			resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
+//    			resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 0; resyncMatrix[11] = 0;
+//    			resyncMatrix[12] = Hc[6];resyncMatrix[13] = Hc[7];resyncMatrix[14]= 0; resyncMatrix[15] = Hc[8];
 
-    			printf(">>>>>>>>>>>>> Updated resyncMatrix ONCE = ");
+    			printf(">>>>>>>>>>>>> Updated resyncMatrix = ");
     			updateMatrix = false;
     			// updatedMatrix = true;
 

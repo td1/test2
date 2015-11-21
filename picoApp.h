@@ -28,7 +28,7 @@ extern "C" {
 //#define ENABLE_BLENDING                 1
 //#define RESYNC_ENABLE                     1
 //#define GENERATE_BLOBS					  1
-#define ENABLE_HOMOGRAPHY					1 // turn off gethomography at init stage sometimes to test camera grabber
+//#define ENABLE_HOMOGRAPHY					1 // turn off gethomography at init stage sometimes to test camera grabber
 #define TEST_RESYNC_HOMOGRAPHY				1
 #define TEST_RESYNC_CAPTURE					1
 
