@@ -237,7 +237,7 @@ void picoApp::update()
     	nFrame ++;
     	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
     	// HUNG TEST disable sendBlobs after sending out video
-    	// ????????????? why is black out with this? if (videoEnable == false)
+    	if (videoEnable == false)
     		sendBlobsEnable = (sendBlobsEnable == true ? false : true);
     	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
     }
@@ -352,14 +352,14 @@ void picoApp::draw(){
 	ofRect(0+hoStart,HEIGHT-80-voEnd,80,80);
 	ofRect(WIDTH-80-hoEnd,HEIGHT-80-voEnd,80,80);
 
+	ofSetHexColor(0xFFFFFF);
 	if (sendBlobsEnable == true) {
 		// printf("sendBlobsEnable, nFrame = %d", nFrame);
 		// bProjectBlobs = false;
-		ofSetHexColor(0xFFFFFF);
-//		ofCircle(40+hoStart,40+voStart,20);
-//		ofCircle(WIDTH-40-hoEnd,40+voStart,20);
-//		ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
-//		ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
+		// ofCircle(40+hoStart,40+voStart,20);
+		// ofCircle(WIDTH-40-hoEnd,40+voStart,20);
+		// ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
+		// ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
 		ofCircle(120,40+voStart,20);
 		ofCircle(WIDTH-40-80,40+voStart,20);
 		ofCircle(40+80,HEIGHT-40-voEnd,20);
@@ -469,7 +469,8 @@ void picoApp::draw(){
     // display detected blob positions
     int varx = 0;
     int vary = 0;
-    int blobPosX[8];
+
+	int blobPosX[8];
     int blobPosY[8];
 
     for (i=0; i < contourFinder.nBlobs; i++) {
@@ -477,7 +478,7 @@ void picoApp::draw(){
     	int blobY = contourFinder.blobs[i].centroid.y;
 
     	int blobA = contourFinder.blobs[i].area;
-    	// ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+    	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
 
     	/* for debug only
     	int blobA = contourFinder.blobs[i].area;
@@ -535,6 +536,15 @@ void picoApp::draw(){
     	}
 
     	/* getMatrixDistance to determine updating the homography matrix */
+    	float distance = 0.0;
+    	for (i=0; i<8; i++) {
+    		blobPos[i].x = blobPosX[i];
+    	    blobPos[i].y = blobPosY[i];
+    	    distance += blobPos[i].squareDistance(blobPosSaved[i]);
+    	    blobPosSaved[i] = blobPos[i];
+    	}
+    	printf("total distance: %5.2f", distance);
+
     	/*
     	distanceX = getMaxDistance(blobPosX, blobPosSavedX);
     	distanceY = getMaxDistance(blobPosX, blobPosSavedY);

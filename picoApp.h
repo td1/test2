@@ -210,6 +210,9 @@ public:
 	ofMatrix3x3 ofo2;
 	ofMatrix3x3 Hc;
 
+    ofVec2f blobPos[8];
+    ofVec2f blobPosSaved[8];
+
 
 };
 
