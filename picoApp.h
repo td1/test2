@@ -143,6 +143,7 @@ public:
 
 #if RESYNC | TEST_RESYNC_CAPTURE
 	ofVideoGrabber 			captureVid;
+#endif
 	ofxCvColorImage 		captureImg;
 	ofxCvGrayscaleImage 	grayCaptureImg;
 	ofxCvGrayscaleImage 	grayCaptureImgSaved;
@@ -152,7 +153,6 @@ public:
 	int 					threshold;
 	bool					bUpdateBackground;
 	bool 					bProjectBlobs;
-#endif
 
 	bool startPlayVideo;
 	int width, height;

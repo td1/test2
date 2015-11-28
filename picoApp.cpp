@@ -164,7 +164,6 @@ void picoApp::setup()
 #endif
 
 #if OMX_CAMERA
-    // HUNG
     omxCameraSettings.width = 1280;
 	omxCameraSettings.height = 720;
 	omxCameraSettings.framerate = 30;
@@ -174,6 +173,26 @@ void picoApp::setup()
 	if (!pixelOutput.isAllocated()) {
 	    pixelOutput.allocate(width, height, GL_RGBA);
 	}
+
+    // HUNG
+	captureImg.allocate(CAPWIDTH,CAPHEIGHT);
+    grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
+    grayCaptureImgSaved.allocate(CAPWIDTH,CAPHEIGHT);
+    grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
+
+    ofo2.set(1,0,640,0,1,0,0,0,1);
+	threshold = 90;
+    ofHideCursor();
+    sendBlobsEnable = false;
+    bUpdateBackground = true;
+
+    videoEnable = false; // TEMP
+    updatedMatrix = false;
+
+    resyncMatrix[0] = 1; resyncMatrix[1] = 0; resyncMatrix[2] = 0; resyncMatrix[3] = 0;
+    resyncMatrix[4] = 0; resyncMatrix[5] = 1; resyncMatrix[6] = 0; resyncMatrix[7] = 0;
+    resyncMatrix[8] = 0; resyncMatrix[9] = 0; resyncMatrix[10]= 1; resyncMatrix[11]= 0;
+    resyncMatrix[12]= 0; resyncMatrix[13]= 0; resyncMatrix[14]= 0; resyncMatrix[15]= 1;
 #endif
 
 #if TEST_RESYNC_CAPTURE
@@ -222,6 +241,39 @@ void picoApp::update()
 	// HUNG
 	// pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
 	// omxPlayer.updatePixels();
+
+	// HUNG
+	bool bNewFrame = false;
+
+    ofBackground(0,0,0);
+    // HUNG captureVid.update();
+    bNewFrame = captureVid.isFrameNew();
+
+    if (bNewFrame) {
+		captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	grayCaptureImg = captureImg;
+
+    	if (bUpdateBackground == true) {
+    		// at least update the first time
+    		grayCaptureImgSaved = grayCaptureImg;
+    		bUpdateBackground = false;
+    	}
+
+    	grayDiff.absDiff(grayCaptureImgSaved, grayCaptureImg);
+    	grayDiff.threshold(80);
+    	contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 20, false);
+    	// if (contourFinder.nBlobs) {
+    	//     ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    	// }
+    	// ofLog(OF_LOG_NOTICE, "getting grayCaptureImgSaved at frame = %d", nFrame);
+    	grayCaptureImgSaved = grayCaptureImg;
+    	nFrame ++;
+    	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
+    	// TEST disable sendBlobs after sending out video
+    	if (videoEnable == false)
+    		sendBlobsEnable = (sendBlobsEnable == true ? false : true);
+    	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
+    }
 #endif
 
 #if TEST_RESYNC_CAPTURE
@@ -378,10 +430,14 @@ void picoApp::draw(){
 		// ofCircle(WIDTH-40-hoEnd,40+voStart,20);
 		// ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
 		// ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
-		ofCircle(120,40+voStart,20);
-		ofCircle(WIDTH-40-80,40+voStart,20);
-		ofCircle(40+80,HEIGHT-40-voEnd,20);
-		ofCircle(WIDTH-40-80,HEIGHT-40-voEnd,20);
+//		ofCircle(120,40+voStart,20);
+//		ofCircle(WIDTH-40-80,40+voStart,20);
+//		ofCircle(40+80,HEIGHT-40-voEnd,20);
+//		ofCircle(WIDTH-40-80,HEIGHT-40-voEnd,20);
+		ofCircle(120,40,20);  // blob1
+		ofCircle(120,440,20); // blob2
+		ofCircle(560,40,20);  // blob3
+		ofCircle(560,440,20); // blob4
 	}
 
 #if ENABLE_BLENDING    
@@ -741,7 +797,149 @@ void picoApp::draw(){
 #if OMX_CAMERA
     // HUNG
     // pixelOutput.draw(0, 0, omxCameraSettings.width, omxCameraSettings.height);
-    captureVid.draw();
+    /* For checkCamera.sh only
+       captureVid.draw();
+     */
+
+    // HUNG
+    int varx = 0;
+    int vary = 0;
+
+	int blobPosX[8];
+    int blobPosY[8];
+
+    for (i=0; i < contourFinder.nBlobs; i++) {
+    	int blobX = contourFinder.blobs[i].centroid.x;
+    	int blobY = contourFinder.blobs[i].centroid.y;
+    	int blobA = contourFinder.blobs[i].area;
+    	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+
+    	blobPosX[i] = blobX;
+    	blobPosY[i] = blobY;
+    }
+
+    if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
+
+    	updateMatrix = true;
+    	for (i=0; i < 8; i++) {
+    		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
+    	    	printf("\n>>>>> blobPos are invalid...skip updating");
+    	    	updateMatrix = false;
+    	    	break;
+    	    }
+    	}
+
+    	for (i=0; i<8; i++) {
+            for (j=i+1; j<8; j++) {
+                if (blobPosX[i]>blobPosX[j]) {
+                    varx = blobPosX[i];
+                    vary = blobPosY[i];
+                    blobPosX[i] = blobPosX[j];
+                    blobPosY[i] = blobPosY[j];
+                    blobPosX[j] = varx;
+                    blobPosY[j] = vary;
+                }
+            }
+    	}
+
+    	for (i=0; i<8; i+=2) {
+    		if (blobPosY[i] > blobPosY[i+1]) {
+    			varx = blobPosX[i];
+    			vary = blobPosY[i];
+    			blobPosX[i] = blobPosX[i+1];
+    			blobPosY[i] = blobPosY[i+1];
+    			blobPosX[i+1] = varx;
+    			blobPosY[i+1] = vary;
+    		}
+    	}
+
+    	/* getMatrixDistance to determine updating the homography matrix */
+    	float distance = 0.0;
+    	for (i=0; i<8; i++) {
+    		blobPos[i].x = blobPosX[i];
+    	    blobPos[i].y = blobPosY[i];
+    	    distance += blobPos[i].squareDistance(blobPosSaved[i]);
+    	    blobPosSaved[i] = blobPos[i];
+    	}
+    	printf("total distance: %5.2f", distance);
+
+    }
+    else {
+      	updateMatrix = false;
+    }
+
+    if (nFrame == 50) {
+    	printf(">>>>> send out video after timeout for test at frame = %d\n", nFrame);
+    	videoEnable = true;
+        sendBlobsEnable = false;
+    }
+
+    unsigned char *pixels = omxPlayer.getPixels();
+    nChannels = 4;
+
+    switch (boardID) {
+      	case ID_TD1:
+       		// break;
+      	case ID_TD2:
+      		if (updateMatrix == true) {
+				src[0].set(120,40);
+				src[1].set(120,440);
+				src[2].set(560,40);
+				src[3].set(560,440);
+
+				dst[0].set(blobPosX[0],blobPosY[0]);
+				dst[1].set(blobPosX[1],blobPosY[1]);
+				dst[2].set(blobPosX[2],blobPosY[2]);
+				dst[3].set(blobPosX[3],blobPosY[3]);
+
+				ofh1 = getResyncHomography3x3(src,dst);
+				ofh1inv = getResyncHomography3x3(dst,src);
+
+				dst[0].set(blobPosX[4],blobPosY[4]);
+				dst[1].set(blobPosX[5],blobPosY[5]);
+				dst[2].set(blobPosX[6],blobPosY[6]);
+				dst[3].set(blobPosX[7],blobPosY[7]);
+
+				ofh2 = getResyncHomography3x3(src,dst);
+				ofh2inv = getResyncHomography3x3(dst,src);
+
+				if (boardID == ID_TD1) {
+				}
+				else {
+					Hc = ofh2inv*ofh1;
+
+					resyncMatrix[0] = Hc[0]; resyncMatrix[1] = Hc[1]; resyncMatrix[2] = 0; resyncMatrix[3] = Hc[2];
+					resyncMatrix[4] = Hc[3]; resyncMatrix[5] = Hc[4]; resyncMatrix[6] = 0; resyncMatrix[7] = Hc[5];
+					resyncMatrix[8] = 0;     resyncMatrix[9] = 0;     resyncMatrix[10]= 0; resyncMatrix[11] = 0;
+					resyncMatrix[12] = Hc[6];resyncMatrix[13] = Hc[7];resyncMatrix[14]= 0; resyncMatrix[15] = Hc[8];
+				}
+
+				printf(">>>>>>>>>>>>> Updated resyncMatrix = ");
+				updateMatrix = false;
+				// updatedMatrix = true;
+
+				for (i=0; i<16; i++)
+					printf("%4.2lf ", resyncMatrix[i]);
+				printf("\n");
+			}
+			break;
+		case ID_TD3:
+			break;
+		case ID_TD4:
+			break;
+		default:;
+	}
+
+	if (videoEnable) {
+		updatedMatrix = true;
+
+		pixelOutput.loadData(pixels, width, height, GL_RGBA);
+		glPushMatrix();
+		glMultMatrixf(resyncMatrix);
+		glTranslatef(0,0,0);
+		pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
+		glPopMatrix();
+	}
 #endif
 
 #if NO_HOMOGRAPHY_TRANFORM
