@@ -240,9 +240,8 @@ void picoApp::update()
 #if OMX_CAMERA
 	// HUNG
 	// pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
-	// omxPlayer.updatePixels();
+	omxPlayer.updatePixels();
 
-	// HUNG
 	bool bNewFrame = false;
 
     ofBackground(0,0,0);
@@ -950,7 +949,7 @@ void picoApp::draw(){
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
 #endif
 
-#if true
+#if 0
     stringstream info;
     info <<"\n" << "output frame rate: " << ofGetFrameRate() << "\n";
     info << "Player: " << omxPlayer.getWidth() << "x" << omxPlayer.getHeight() << " @ "<< omxPlayer.getFPS() << "fps"<< "\n";
