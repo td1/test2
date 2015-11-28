@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxOMXPlayer.h"
+#include "ofxRPiCameraVideoGrabber.h"
 #include "myID.h"
 #include "ConsoleListener.h"
 #include "ofxOpenCv.h"
@@ -29,8 +30,10 @@ extern "C" {
 //#define RESYNC_ENABLE                     1
 //#define GENERATE_BLOBS					  1
 //#define ENABLE_HOMOGRAPHY					1 // turn off gethomography at init stage sometimes to test camera grabber
-#define TEST_RESYNC_HOMOGRAPHY				1
-#define TEST_RESYNC_CAPTURE					1
+
+// #define TEST_RESYNC_HOMOGRAPHY				1
+// #define TEST_RESYNC_CAPTURE					1
+#define OMX_CAMERA							1
 
 /* DEBUG/TEST SWITCH */
 #define DEBUG_HOMOGRAPHY               		1
@@ -133,6 +136,11 @@ public:
 
 	ofTexture 				pixelOutput;
         
+#if OMX_CAMERA
+	ofxRPiCameraVideoGrabber captureVid;
+	OMXCameraSettings 		omxCameraSettings;
+#endif
+
 #if RESYNC | TEST_RESYNC_CAPTURE
 	ofVideoGrabber 			captureVid;
 	ofxCvColorImage 		captureImg;
@@ -146,9 +154,7 @@ public:
 	bool 					bProjectBlobs;
 #endif
 
-	bool doUpdatePixels;
 	bool startPlayVideo;
-
 	int width, height;
 	char matrixFN[30];
 	int boardID;

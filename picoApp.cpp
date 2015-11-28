@@ -3,17 +3,12 @@
 
 void picoApp::setup()
 {
-    // ofSetLogLevel(OF_LOG_WARNING);
-    // ofSetLogLevel("ofThread", OF_LOG_ERROR);
     ofSetLogLevel(OF_LOG_NOTICE);
     ofSetLogLevel("ofThread", OF_LOG_NOTICE);
 
-    doSaveImage = false;
-    doUpdatePixels = true;
     startPlayVideo = false;
-    
     boardID = myboardID;
-    ofLog(OF_LOG_NOTICE, "passing boardID = %d\n", myboardID);
+    ofLog(OF_LOG_NOTICE, "boardID = %d\n", myboardID);
     
 /* currently still using ID defined at myID.h */    
 #ifdef TD1        
@@ -168,6 +163,19 @@ void picoApp::setup()
 
 #endif
 
+#if OMX_CAMERA
+    // HUNG
+    omxCameraSettings.width = 1280;
+	omxCameraSettings.height = 720;
+	omxCameraSettings.framerate = 30;
+	omxCameraSettings.isUsingTexture = true; // false;
+	omxCameraSettings.enablePixels = true;
+	captureVid.setup(omxCameraSettings);
+	if (!pixelOutput.isAllocated()) {
+	    pixelOutput.allocate(width, height, GL_RGBA);
+	}
+#endif
+
 #if TEST_RESYNC_CAPTURE
     captureVid.setVerbose(true);
     ofLog(OF_LOG_NOTICE, "vidGrabber: set device ID");
@@ -177,40 +185,47 @@ void picoApp::setup()
     ofLog(OF_LOG_NOTICE, "vidGrabber: set init Grabber");
     captureVid.initGrabber(CAPWIDTH,CAPHEIGHT);
     ofLog(OF_LOG_NOTICE, "initGrabber and capture image...starting with resolution %dx%d", CAPWIDTH, CAPHEIGHT);
+
     captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImgSaved.allocate(CAPWIDTH,CAPHEIGHT);
     grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
 
     ofo2.set(1,0,640,0,1,0,0,0,1);
-//    printf("offset o2 = ");
-//    for (int i=0; i<9; i++)
-//    	printf("%4.2lf ", ofo2[i]);
-//    printf("\n");
+	//    printf("offset o2 = ");
+	//    for (int i=0; i<9; i++)
+	//    	printf("%4.2lf ", ofo2[i]);
+	//    printf("\n");
 
     threshold = 90;
     ofHideCursor();
     sendBlobsEnable = false;
     bUpdateBackground = true;
 
-    videoEnable = false; // HUNG TEMP
+    videoEnable = false; // TEMP
     updatedMatrix = false;
 
     resyncMatrix[0] = 1; resyncMatrix[1] = 0; resyncMatrix[2] = 0; resyncMatrix[3] = 0;
     resyncMatrix[4] = 0; resyncMatrix[5] = 1; resyncMatrix[6] = 0; resyncMatrix[7] = 0;
     resyncMatrix[8] = 0; resyncMatrix[9] = 0; resyncMatrix[10]= 1; resyncMatrix[11]= 0;
     resyncMatrix[12]= 0; resyncMatrix[13]= 0; resyncMatrix[14]= 0; resyncMatrix[15]= 1;
-
-#endif
     
     if (!pixelOutput.isAllocated()) {
         pixelOutput.allocate(width, height, GL_RGBA);
     }
+#endif
 }
 
 void picoApp::update()
 {
-    bool bNewFrame = false;
+#if OMX_CAMERA
+	// HUNG
+	// pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
+	// omxPlayer.updatePixels();
+#endif
+
+#if TEST_RESYNC_CAPTURE
+	bool bNewFrame = false;
 
     ofBackground(0,0,0);
     captureVid.update();
@@ -236,14 +251,14 @@ void picoApp::update()
     	grayCaptureImgSaved = grayCaptureImg;
     	nFrame ++;
     	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
-    	// HUNG TEST disable sendBlobs after sending out video
+    	// TEST disable sendBlobs after sending out video
     	if (videoEnable == false)
     		sendBlobsEnable = (sendBlobsEnable == true ? false : true);
     	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
     }
 
 
-#if 0
+	#if 0
     if (bNewFrame) {
     	switch (nFrame) {
     	case 0:
@@ -306,12 +321,15 @@ void picoApp::update()
     		ofLog(OF_LOG_NOTICE, "unhandled case, frame = %d", nFrame);
     	}
     }
-#endif
+	#endif
 
   	omxPlayer.updatePixels();
     if (!pixelOutput.isAllocated()) {
       	pixelOutput.allocate(width, height, GL_RGBA);
     }
+
+#endif
+
 }
 
 void picoApp::draw(){
@@ -564,7 +582,7 @@ void picoApp::draw(){
     	}
     	printf("\n");*/
 
-    	// HUNG TEST ONLY - UPDATE MATRIX ONLY ONCE
+    	// TEST ONLY - UPDATE MATRIX ONLY ONCE
     	/*if (updateMatrix == true) {
 
     		updateMatrix = false;
@@ -581,7 +599,7 @@ void picoApp::draw(){
     	updateMatrix = false;
     }
 
-    // HUNG TEST ONLY - WILL ENABLE VIDEO AGAIN AFTER TIMEOUT
+    // TEST ONLY - WILL ENABLE VIDEO AGAIN AFTER TIMEOUT
     if (nFrame == 100) {
     	printf(">>>>> send out video after timeout for test at frame = %d\n", nFrame);
     	videoEnable = true;
@@ -704,14 +722,7 @@ void picoApp::draw(){
     }
 
     // output
-#if 1
     // check to update reSyncMatrix
-
-
-
-
-
-
     if (videoEnable) {
     	updatedMatrix = true;
 
@@ -727,6 +738,10 @@ void picoApp::draw(){
     }
 #endif
 
+#if OMX_CAMERA
+    // HUNG
+    // pixelOutput.draw(0, 0, omxCameraSettings.width, omxCameraSettings.height);
+    captureVid.draw();
 #endif
 
 #if NO_HOMOGRAPHY_TRANFORM
@@ -737,10 +752,12 @@ void picoApp::draw(){
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
 #endif
 
-#if false
+#if true
     stringstream info;
-    info <<"\n" << "p=Pause,f=Play,s=Save" << doUpdatePixels << startPlayVideo << doSaveImage;
-    ofDrawBitmapStringHighlight(omxPlayer.getInfo() + info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
+    info <<"\n" << "output frame rate: " << ofGetFrameRate() << "\n";
+    info << "Player: " << omxPlayer.getWidth() << "x" << omxPlayer.getHeight() << " @ "<< omxPlayer.getFPS() << "fps"<< "\n";
+    info << "Camera: " << captureVid.getWidth() << "x" << captureVid.getHeight() << " @ "<< captureVid.getFrameRate() << "fps"<< "\n";
+    ofDrawBitmapStringHighlight(info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
 #endif
     
     /////////////////////////////////////////////
@@ -761,15 +778,8 @@ void picoApp::draw(){
 
 void picoApp::keyPressed  (int key)
 {
+#if	TEST_RESYNC_CAPTURE
 	switch (key) {
-		case 's':
-			doSaveImage = true;
-    		break;
-		case 'p':
-			doUpdatePixels = !doUpdatePixels;
-		case 'f':
-			startPlayVideo = true;
-#if RESYNC
 		case ' ':
     		bUpdateBackground = true;
     		break;
@@ -780,9 +790,9 @@ void picoApp::keyPressed  (int key)
     	case '-':
     		threshold --;
     		if (threshold < 0) threshold = 0;
-#endif
     		break;
 	}
+#endif
 }
 
 void picoApp::onCharacterReceived(SSHKeyListenerEventData& e)
@@ -2233,7 +2243,7 @@ FILE *matp;
     offset2[1][1] = offset2[2][2] = offset2[3][3] = 1;
     offset3[1][1] = offset3[2][2] = offset3[3][3] = 1;
     offset4[1][1] = offset4[2][2] = offset4[3][3] = 1;
-    // offset2[1][3] = -560; // HUNG TEST -640 current setting = 560
+    // offset2[1][3] = -560; // TEST -640 current setting = 560
 
 #ifdef OFFSET_16_9
     offset2[2][3] = 0; // test offset
@@ -2390,7 +2400,7 @@ FILE *matp;
         }
     }
     offset2[1][1] = offset2[2][2] = offset2[3][3] = 1;
-    offset2[1][3] = 580; // HUNG TEST 640,  current setting = 560
+    offset2[1][3] = 580; // TEST 640,  current setting = 560
     
     /* Write to o2h2invh1.txt */
     for (i=1; i<=3; i++) {
@@ -3291,7 +3301,7 @@ int picoApp::getHomography(int BoardID)
             if (thdata2.shotAnalyzed) {
             	ofLog(OF_LOG_NOTICE, "*** done screenShotGetHomography, wait for others %d frames\n", thdata2.time2wait);
                 synch = 1;
-                // break; HUNG TEST // should we break here after finished
+                // break; TEST // should we break here after finished
             }
         }
         
