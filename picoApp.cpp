@@ -256,22 +256,21 @@ void picoApp::update()
     		// at least update the first time
     		grayCaptureImgSaved = grayCaptureImg;
     		bUpdateBackground = false;
+    		ofLog(OF_LOG_NOTICE, "update background first time");
     	}
 
     	grayDiff.absDiff(grayCaptureImgSaved, grayCaptureImg);
     	grayDiff.threshold(80);
     	contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 20, false);
-    	// if (contourFinder.nBlobs) {
-    	//     ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
-    	// }
-    	// ofLog(OF_LOG_NOTICE, "getting grayCaptureImgSaved at frame = %d", nFrame);
+    	if (contourFinder.nBlobs) {
+    	     ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    	}
     	grayCaptureImgSaved = grayCaptureImg;
     	nFrame ++;
-    	// ofLog(OF_LOG_NOTICE, "next capture frame = %d", nFrame);
-    	// TEST disable sendBlobs after sending out video
-    	if (videoEnable == false)
-    		sendBlobsEnable = (sendBlobsEnable == true ? false : true);
-    	// ofLog(OF_LOG_NOTICE, "sendBlobsEnable = %d", sendBlobsEnable);
+
+    	// if (videoEnable == false)
+    	sendBlobsEnable = (sendBlobsEnable == true ? false : true);
+
     }
 #endif
 
@@ -960,10 +959,11 @@ void picoApp::draw(){
     /////////////////////////////////////////////
     // Display for testing only
     /////////////////////////////////////////////
+#if 0
     // if (nFrame > 100) {
     // grayBackground.drawROI(80,80,640-160,480-160);
     // grayDiff.drawROI(80,80,640-160,480-160);
-    // grayCaptureImg.drawROI(80,80,640-160,480-160);
+    grayCaptureImg.drawROI(80,80,640-160,480-160);
     	// contourFinder.draw(80,80);
     // }
     // else {
@@ -971,6 +971,7 @@ void picoApp::draw(){
         // ofSetHexColor(0x000000);
         // ofRect(80,80,640-160,480-160);
     // }
+#endif
 }
 
 void picoApp::keyPressed  (int key)
