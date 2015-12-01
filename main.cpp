@@ -21,12 +21,13 @@ int main(int argc, char *argv[])
      
      
 #if DEBUG_HOMOGRAPHY
-	ofSetupOpenGL(1280, 720, OF_WINDOW); // HUNG set 1280x720 for videoGrabber
+	ofSetupOpenGL(1280, 720, OF_WINDOW); // HUNG set 1280x720 for camera
     // ofSetupOpenGL(640, 480, OF_WINDOW); // testpatttern 640x480
     // ofSetupOpenGL(640, 360, OF_WINDOW); // testpattern 640x360
 #else
     // Normal operation 640x480
-    ofSetupOpenGL(WIDTH, HEIGHT, OF_WINDOW); // video 640x480
+    // ofSetupOpenGL(WIDTH, HEIGHT, OF_WINDOW); // video 640x480
+	ofSetupOpenGL(1280, 720, OF_WINDOW); // HUNG set 1280x720 for camera
 #endif
     
 	ofRunApp( new picoApp());

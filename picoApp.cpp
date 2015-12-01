@@ -3,7 +3,7 @@
 
 void picoApp::setup()
 {
-    ofSetLogLevel(OF_LOG_NOTICE);
+    ofSetLogLevel(OF_LOG_VERBOSE);
     ofSetLogLevel("ofThread", OF_LOG_NOTICE);
 
     startPlayVideo = false;
