@@ -959,7 +959,7 @@ void picoApp::draw(){
     /////////////////////////////////////////////
     // Display for testing only
     /////////////////////////////////////////////
-#if 0
+#if 1
     // if (nFrame > 100) {
     // grayBackground.drawROI(80,80,640-160,480-160);
     // grayDiff.drawROI(80,80,640-160,480-160);
