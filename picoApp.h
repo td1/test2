@@ -34,6 +34,7 @@ extern "C" {
 // #define TEST_RESYNC_HOMOGRAPHY				1
 // #define TEST_RESYNC_CAPTURE					1
 #define OMX_CAMERA							1
+#define CAMERA_TO_TEXTURE					1
 
 /* DEBUG/TEST SWITCH */
 #define DEBUG_HOMOGRAPHY               		1

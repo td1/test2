@@ -171,11 +171,9 @@ void picoApp::setup()
 	omxCameraSettings.enablePixels = true;
 	captureVid.setup(omxCameraSettings);
 	if (!pixelOutput.isAllocated()) {
-	    pixelOutput.allocate(width, height, GL_RGBA);
+	    pixelOutput.allocate(omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
 	}
-
-    // HUNG
-	captureImg.allocate(CAPWIDTH,CAPHEIGHT);
+    captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImgSaved.allocate(CAPWIDTH,CAPHEIGHT);
     grayDiff.allocate(CAPWIDTH,CAPHEIGHT);
@@ -238,8 +236,10 @@ void picoApp::setup()
 void picoApp::update()
 {
 #if OMX_CAMERA
-	// HUNG
-	// pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
+	#if CAMERA_TO_TEXTURE
+	pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
+	#endif
+
 	omxPlayer.updatePixels();
 
 	bool bNewFrame = false;
@@ -793,7 +793,7 @@ void picoApp::draw(){
 #endif
 
 #if OMX_CAMERA
-    // HUNG
+    // DRAW
     // pixelOutput.draw(0, 0, omxCameraSettings.width, omxCameraSettings.height);
     /* For checkCamera.sh only
        captureVid.draw();
@@ -928,6 +928,9 @@ void picoApp::draw(){
 		default:;
 	}
 
+#if CAMERA_TO_TEXTURE
+    pixelOutput.draw(0, 0, WIDTH, HEIGHT);
+#else
 	if (videoEnable) {
 		updatedMatrix = true;
 
@@ -939,6 +942,8 @@ void picoApp::draw(){
 		glPopMatrix();
 	}
 #endif
+
+#endif // OMX_CAMERA
 
 #if NO_HOMOGRAPHY_TRANFORM
     unsigned char *pixels = omxPlayer.getPixels();
@@ -959,7 +964,7 @@ void picoApp::draw(){
     /////////////////////////////////////////////
     // Display for testing only
     /////////////////////////////////////////////
-#if 1
+#if 0
     // if (nFrame > 100) {
     // grayBackground.drawROI(80,80,640-160,480-160);
     // grayDiff.drawROI(80,80,640-160,480-160);
