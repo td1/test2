@@ -173,6 +173,8 @@ void picoApp::setup()
 	if (!pixelOutput.isAllocated()) {
 	    pixelOutput.allocate(omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
 	}
+	grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR_ALPHA); // HUNG
+
     captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImgSaved.allocate(CAPWIDTH,CAPHEIGHT);
@@ -240,16 +242,41 @@ void picoApp::update()
 	pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
 	#endif
 
-	omxPlayer.updatePixels();
+    omxPlayer.updatePixels();
 
 	bool bNewFrame = false;
 
     ofBackground(0,0,0);
-    // HUNG captureVid.update();
     bNewFrame = captureVid.isFrameNew();
 
     if (bNewFrame) {
-		captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+
+    	/* verify the captured frames */
+    	/*if (nFrame % 20 == 0) {
+    		string imgPath = ofToDataPath(ofGetTimestampString()+".png", true);
+    		ofSaveImage(captureVid.getPixels(), imgPath);
+    		ofLog(OF_LOG_NOTICE, "save frame image %d", nFrame);
+    	}*/
+
+    	// HUNG
+    	// unsigned char *capPixels = captureVid.getPixels();
+    	// pixelOutput.loadData(capPixels, 1280, 720, GL_RGBA);
+
+    	// ORI captureImg.setFromPixels(capPixels, CAPWIDTH, CAPHEIGHT);
+    	// ORI grayCaptureImg = captureImg;
+
+		// TEST CASE: grab captureImg to texture display
+    	// pixelOutput = captureImg.getTextureReference(); blank output
+
+    	// TEST CASE: use cvImg
+    	// cvImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT); ERROR
+    	// grayCaptureImg = cvImg;
+
+    	// good grabImg.setFromPixels(capPixels, CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
+
+    	// HUNG TEST CASE: try OF_IMAGE_COLOR to transfer to ofxCvColorImage without alpha, not good
+    	grabImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
+    	captureImg.setFromPixels(grabImg.getPixels(),CAPWIDTH, CAPHEIGHT);
     	grayCaptureImg = captureImg;
 
     	if (bUpdateBackground == true) {
@@ -794,15 +821,8 @@ void picoApp::draw(){
 
 #if OMX_CAMERA
     // DRAW
-    // pixelOutput.draw(0, 0, omxCameraSettings.width, omxCameraSettings.height);
-    /* For checkCamera.sh only
-       captureVid.draw();
-     */
-
-    // HUNG
     int varx = 0;
     int vary = 0;
-
 	int blobPosX[8];
     int blobPosY[8];
 
@@ -811,13 +831,11 @@ void picoApp::draw(){
     	int blobY = contourFinder.blobs[i].centroid.y;
     	int blobA = contourFinder.blobs[i].area;
     	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
-
     	blobPosX[i] = blobX;
     	blobPosY[i] = blobY;
     }
 
     if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
-
     	updateMatrix = true;
     	for (i=0; i < 8; i++) {
     		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
@@ -826,7 +844,6 @@ void picoApp::draw(){
     	    	break;
     	    }
     	}
-
     	for (i=0; i<8; i++) {
             for (j=i+1; j<8; j++) {
                 if (blobPosX[i]>blobPosX[j]) {
@@ -839,7 +856,6 @@ void picoApp::draw(){
                 }
             }
     	}
-
     	for (i=0; i<8; i+=2) {
     		if (blobPosY[i] > blobPosY[i+1]) {
     			varx = blobPosX[i];
@@ -850,7 +866,6 @@ void picoApp::draw(){
     			blobPosY[i+1] = vary;
     		}
     	}
-
     	/* getMatrixDistance to determine updating the homography matrix */
     	float distance = 0.0;
     	for (i=0; i<8; i++) {
@@ -860,7 +875,6 @@ void picoApp::draw(){
     	    blobPosSaved[i] = blobPos[i];
     	}
     	printf("total distance: %5.2f", distance);
-
     }
     else {
       	updateMatrix = false;
@@ -930,7 +944,36 @@ void picoApp::draw(){
 
 #if CAMERA_TO_TEXTURE
     pixelOutput.draw(0, 0, WIDTH, HEIGHT);
-#else
+#endif
+
+#if CAMERA_TO_IMAGE
+    //unsigned char *capPixels = captureVid.getPixels(); // NOTE: getPixels at draw first, should be at update
+    //nChannels = 4;
+    // pixelOutput.loadData(capPixels, 640, 480, GL_RGBA);
+
+    /*glPushMatrix();
+    glMultMatrixf(resyncMatrix);
+    glTranslatef(0,0,0);
+	pixelOutput.draw(0, 0, 640, 480);
+	glPopMatrix();
+	*/
+
+    // HUNG
+    // pixelOutput.draw(0, 0, 640, 480); // good case
+    // grabImg.draw(0,0,640,480); // good case
+    // grayCaptureImg.draw(0,0,640,480); // bad case, did not resize
+    // captureImg.draw(0,0,640,480); // bad case, did not resize
+    // captureImg.drawROI(640,0,640,480); // show 4 dots
+    // captureImg.drawROI(0,0,640,480); // bad case, did not resize
+    // pixelOutput.draw(0, 0, 640, 480); // same but pixelOutput grabbed from ofxCvImage captureImg
+    // cvImg.draw(0,0,640,480); // ERROR VIRTUAL CLASS COMPILE ERROR
+
+    grabImg.draw(0,0,640,480);
+    // captureImg.draw(0,0,640,480); // ????
+
+#endif
+
+#if 0
 	if (videoEnable) {
 		updatedMatrix = true;
 

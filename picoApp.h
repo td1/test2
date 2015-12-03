@@ -34,7 +34,8 @@ extern "C" {
 // #define TEST_RESYNC_HOMOGRAPHY				1
 // #define TEST_RESYNC_CAPTURE					1
 #define OMX_CAMERA							1
-#define CAMERA_TO_TEXTURE					1
+// #define CAMERA_TO_TEXTURE					1 // test only: display video from camera to texture draw out
+#define CAMERA_TO_IMAGE						1     // test only: display video from camera to image draw out
 
 /* DEBUG/TEST SWITCH */
 #define DEBUG_HOMOGRAPHY               		1
@@ -102,7 +103,6 @@ static int myboardID;
 #define CAPWIDTH		1280	// RESYNC CAPTURE WIDTH
 #define CAPHEIGHT		720 	// RESYNC CAPTURE HEIGHT
 
-
 class picoApp : public ofBaseApp, public SSHKeyListener{
 	
 public:
@@ -140,6 +140,7 @@ public:
 #if OMX_CAMERA
 	ofxRPiCameraVideoGrabber captureVid;
 	OMXCameraSettings 		omxCameraSettings;
+	ofImage					grabImg;
 #endif
 
 #if RESYNC | TEST_RESYNC_CAPTURE
