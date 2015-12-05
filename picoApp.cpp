@@ -164,16 +164,16 @@ void picoApp::setup()
 #endif
 
 #if OMX_CAMERA
-    omxCameraSettings.width = 1280;
-	omxCameraSettings.height = 720;
+    omxCameraSettings.width = CAPWIDTH;
+	omxCameraSettings.height = CAPHEIGHT;
 	omxCameraSettings.framerate = 30;
-	omxCameraSettings.isUsingTexture = true; // false;
+	omxCameraSettings.isUsingTexture = true;
 	omxCameraSettings.enablePixels = true;
 	captureVid.setup(omxCameraSettings);
 	if (!pixelOutput.isAllocated()) {
 	    pixelOutput.allocate(omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
 	}
-	grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR_ALPHA); // HUNG
+	grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR_ALPHA);
 
     captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
@@ -258,7 +258,6 @@ void picoApp::update()
     		ofLog(OF_LOG_NOTICE, "save frame image %d", nFrame);
     	}*/
 
-    	// HUNG
     	// unsigned char *capPixels = captureVid.getPixels();
     	// pixelOutput.loadData(capPixels, 1280, 720, GL_RGBA);
 
@@ -274,10 +273,28 @@ void picoApp::update()
 
     	// good grabImg.setFromPixels(capPixels, CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
 
-    	// HUNG TEST CASE: try OF_IMAGE_COLOR to transfer to ofxCvColorImage without alpha, not good
-    	grabImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
-    	captureImg.setFromPixels(grabImg.getPixels(),CAPWIDTH, CAPHEIGHT);
-    	grayCaptureImg = captureImg;
+    	// TEST CASE: try to test the ofxCvColor image by transfer it into ofImage
+    	// captureImg.setFromPixels(captureVid.getPixels(),CAPWIDTH, CAPHEIGHT);
+
+    	// captureImg.setFromPixels(captureVid.getPixels(),WIDTH,HEIGHT);
+    	// grayCaptureImg = captureImg;
+    	// grabImg.setFromPixels(grayCaptureImg.getPixels(),WIDTH,HEIGHT, OF_IMAGE_GRAYSCALE, true);
+    	// grabImg.setFromPixels(grayCaptureImg.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
+
+    	// HUNG
+    	// T1 grabImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
+    	// T2 pixelOutput.loadData(captureVid.getPixels(), 1280, 720, GL_RGBA);
+    	// T3 grabImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
+    	// T3 pixelOutput.loadData(grabImg.getPixels(), CAPWIDTH, CAPHEIGHT, GL_RGBA);
+    	// T4 captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	// T5 unsigned char *capPixels = captureVid.getPixels();
+    	// T5 captureImg.setRoiFromPixels(capPixels, WIDTH, HEIGHT);
+    	// T6 captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	// T7 captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	// T7 grabImg.setFromPixels(captureImg.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR, true);
+    	// T10
+    	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+
 
     	if (bUpdateBackground == true) {
     		// at least update the first time
@@ -958,7 +975,6 @@ void picoApp::draw(){
 	glPopMatrix();
 	*/
 
-    // HUNG
     // pixelOutput.draw(0, 0, 640, 480); // good case
     // grabImg.draw(0,0,640,480); // good case
     // grayCaptureImg.draw(0,0,640,480); // bad case, did not resize
@@ -968,8 +984,17 @@ void picoApp::draw(){
     // pixelOutput.draw(0, 0, 640, 480); // same but pixelOutput grabbed from ofxCvImage captureImg
     // cvImg.draw(0,0,640,480); // ERROR VIRTUAL CLASS COMPILE ERROR
 
-    grabImg.draw(0,0,640,480);
-    // captureImg.draw(0,0,640,480); // ????
+    // HUNG
+    // T1 grabImg.draw(0,0,640,480);
+    // T2 pixelOutput.draw(0, 0, 640, 480);
+    // T3 pixelOutput.draw(0, 0, 640, 480);
+    // T4 captureImg.draw(0,0,640,480);
+    // T5 captureImg.draw(0,0,640,480);
+    // T6 captureImg.draw(0,0,1280,720);
+    // T7 grabImg.draw(0,0,640,480);
+    // T9 captureVid.getTextureReference().draw(0,0,640,480);
+    // T10 captureImg.getTextureReference().draw(0,0,640,480);
+    captureImg.drawROI(640,0,640,480);
 
 #endif
 
