@@ -40,7 +40,8 @@ void picoApp::setup()
     
 #ifdef DEBUG_HOMOGRAPHY
 // videoPath = ofToDataPath("./testpattern.mp4", true);
-    videoPath = ofToDataPath("../../../video/grid_640x480.mp4", true);
+//HUNG videoPath = ofToDataPath("../../../video/grid_640x480.mp4", true);
+    videoPath = ofToDataPath("./Timecoded_Big_bunny_1.mov", true);
 // #else
 // videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif    
@@ -104,7 +105,7 @@ void picoApp::setup()
     omxPlayer.loadMovie(videoPath); 
     width = omxPlayer.getWidth();
     height = omxPlayer.getHeight();
-    ofLog(OF_LOG_NOTICE, "movie loaded, resolution = %dx%d, default = %dx%d\n", width, height, WIDTH, HEIGHT);
+    ofLog(OF_LOG_NOTICE, "omxPlayer movie loaded, widthxheight = %dx%d, WIDTHxHEIGHT default = %dx%d\n", width, height, WIDTH, HEIGHT);
     if (width != WIDTH || height != HEIGHT) {
     	ofLog(OF_LOG_NOTICE,"change to use width=%d, height=%d instead default values\n", width, height);
     }    
@@ -169,11 +170,17 @@ void picoApp::setup()
 	omxCameraSettings.framerate = 30;
 	omxCameraSettings.isUsingTexture = true;
 	omxCameraSettings.enablePixels = true;
-	captureVid.setup(omxCameraSettings);
+	
+// HUNG
+captureVid.setup(omxCameraSettings);
 	if (!pixelOutput.isAllocated()) {
-	    pixelOutput.allocate(omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
+	    // HUNG pixelOutput.allocate(omxCameraSettings.width, omxCameraSettings.height, GL_RGB); 
+	    pixelOutput.allocate(width, height, GL_RGBA); 
 	}
-	grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR_ALPHA);
+	
+
+    // grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR_ALPHA); // GL_RGBA
+    grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR); // GL_RGB
 
     captureImg.allocate(CAPWIDTH,CAPHEIGHT);
     grayCaptureImg.allocate(CAPWIDTH,CAPHEIGHT);
@@ -238,19 +245,13 @@ void picoApp::setup()
 void picoApp::update()
 {
 #if OMX_CAMERA
-	#if CAMERA_TO_TEXTURE
-	pixelOutput.loadData(captureVid.getPixels(), omxCameraSettings.width, omxCameraSettings.height, GL_RGBA);
-	#endif
 
     omxPlayer.updatePixels();
-
-	bool bNewFrame = false;
-
+    bool bNewFrame = false;
     ofBackground(0,0,0);
     bNewFrame = captureVid.isFrameNew();
 
     if (bNewFrame) {
-
     	/* verify the captured frames */
     	/*if (nFrame % 20 == 0) {
     		string imgPath = ofToDataPath(ofGetTimestampString()+".png", true);
@@ -258,43 +259,9 @@ void picoApp::update()
     		ofLog(OF_LOG_NOTICE, "save frame image %d", nFrame);
     	}*/
 
-    	// unsigned char *capPixels = captureVid.getPixels();
-    	// pixelOutput.loadData(capPixels, 1280, 720, GL_RGBA);
-
-    	// ORI captureImg.setFromPixels(capPixels, CAPWIDTH, CAPHEIGHT);
-    	// ORI grayCaptureImg = captureImg;
-
-		// TEST CASE: grab captureImg to texture display
-    	// pixelOutput = captureImg.getTextureReference(); blank output
-
-    	// TEST CASE: use cvImg
-    	// cvImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT); ERROR
-    	// grayCaptureImg = cvImg;
-
-    	// good grabImg.setFromPixels(capPixels, CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
-
-    	// TEST CASE: try to test the ofxCvColor image by transfer it into ofImage
-    	// captureImg.setFromPixels(captureVid.getPixels(),CAPWIDTH, CAPHEIGHT);
-
-    	// captureImg.setFromPixels(captureVid.getPixels(),WIDTH,HEIGHT);
-    	// grayCaptureImg = captureImg;
-    	// grabImg.setFromPixels(grayCaptureImg.getPixels(),WIDTH,HEIGHT, OF_IMAGE_GRAYSCALE, true);
-    	// grabImg.setFromPixels(grayCaptureImg.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
-
-    	// HUNG
-    	// T1 grabImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
-    	// T2 pixelOutput.loadData(captureVid.getPixels(), 1280, 720, GL_RGBA);
-    	// T3 grabImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR_ALPHA, true);
-    	// T3 pixelOutput.loadData(grabImg.getPixels(), CAPWIDTH, CAPHEIGHT, GL_RGBA);
-    	// T4 captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
-    	// T5 unsigned char *capPixels = captureVid.getPixels();
-    	// T5 captureImg.setRoiFromPixels(capPixels, WIDTH, HEIGHT);
-    	// T6 captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
-    	// T7 captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
-    	// T7 grabImg.setFromPixels(captureImg.getPixels(), CAPWIDTH, CAPHEIGHT, OF_IMAGE_COLOR, true);
-    	// T10
-    	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
-
+        // HUNG
+	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	grayCaptureImg = captureImg;
 
     	if (bUpdateBackground == true) {
     		// at least update the first time
@@ -319,7 +286,7 @@ void picoApp::update()
 #endif
 
 #if TEST_RESYNC_CAPTURE
-	bool bNewFrame = false;
+    bool bNewFrame = false;
 
     ofBackground(0,0,0);
     captureVid.update();
@@ -429,58 +396,6 @@ void picoApp::update()
 void picoApp::draw(){
     int i,j,k;
     int var1, var2, nChannels;
-
-	int hoStart = 0;
-	int hoEnd = 0;
-	int voStart = 0;
-	int voEnd = 0;
-	switch (boardID) {
-		case ID_TD1:
-			hoEnd = 80;
-#ifdef PICO4
-			voEnd = 80;
-#endif
-	        break;
-	    case ID_TD2:
-	    	hoStart = 80;
-#ifdef PICO4
-			voEnd = 80;
-#endif
-			break;
-	    case ID_TD3:
-	    	hoEnd = 80;
-	    	voStart = 80;
-	    	break;
-	    case ID_TD4:
-	    	hoStart = 80;
-	    	voStart = 80;
-	    	break;
-	    default:;
-	}
-	ofFill();
-	ofSetHexColor(0x000000);
-	ofRect(0+hoStart,voStart,80,80);
-	ofRect(WIDTH-80-hoEnd,voStart,80,80);
-	ofRect(0+hoStart,HEIGHT-80-voEnd,80,80);
-	ofRect(WIDTH-80-hoEnd,HEIGHT-80-voEnd,80,80);
-
-	ofSetHexColor(0xFFFFFF);
-	if (sendBlobsEnable == true) {
-		// printf("sendBlobsEnable, nFrame = %d", nFrame);
-		// bProjectBlobs = false;
-		// ofCircle(40+hoStart,40+voStart,20);
-		// ofCircle(WIDTH-40-hoEnd,40+voStart,20);
-		// ofCircle(40+hoStart,HEIGHT-40-voEnd,20);
-		// ofCircle(WIDTH-40-hoEnd,HEIGHT-40-voEnd,20);
-//		ofCircle(120,40+voStart,20);
-//		ofCircle(WIDTH-40-80,40+voStart,20);
-//		ofCircle(40+80,HEIGHT-40-voEnd,20);
-//		ofCircle(WIDTH-40-80,HEIGHT-40-voEnd,20);
-		ofCircle(120,40,20);  // blob1
-		ofCircle(120,440,20); // blob2
-		ofCircle(560,40,20);  // blob3
-		ofCircle(560,440,20); // blob4
-	}
 
 #if ENABLE_BLENDING    
     // calculate fading factors
@@ -959,11 +874,6 @@ void picoApp::draw(){
 		default:;
 	}
 
-#if CAMERA_TO_TEXTURE
-    pixelOutput.draw(0, 0, WIDTH, HEIGHT);
-#endif
-
-#if CAMERA_TO_IMAGE
     //unsigned char *capPixels = captureVid.getPixels(); // NOTE: getPixels at draw first, should be at update
     //nChannels = 4;
     // pixelOutput.loadData(capPixels, 640, 480, GL_RGBA);
@@ -975,40 +885,22 @@ void picoApp::draw(){
 	glPopMatrix();
 	*/
 
-    // pixelOutput.draw(0, 0, 640, 480); // good case
-    // grabImg.draw(0,0,640,480); // good case
-    // grayCaptureImg.draw(0,0,640,480); // bad case, did not resize
-    // captureImg.draw(0,0,640,480); // bad case, did not resize
-    // captureImg.drawROI(640,0,640,480); // show 4 dots
-    // captureImg.drawROI(0,0,640,480); // bad case, did not resize
-    // pixelOutput.draw(0, 0, 640, 480); // same but pixelOutput grabbed from ofxCvImage captureImg
-    // cvImg.draw(0,0,640,480); // ERROR VIRTUAL CLASS COMPILE ERROR
-
-    // HUNG
-    // T1 grabImg.draw(0,0,640,480);
-    // T2 pixelOutput.draw(0, 0, 640, 480);
-    // T3 pixelOutput.draw(0, 0, 640, 480);
-    // T4 captureImg.draw(0,0,640,480);
-    // T5 captureImg.draw(0,0,640,480);
-    // T6 captureImg.draw(0,0,1280,720);
-    // T7 grabImg.draw(0,0,640,480);
-    // T9 captureVid.getTextureReference().draw(0,0,640,480);
-    // T10 captureImg.getTextureReference().draw(0,0,640,480);
-    captureImg.drawROI(640,0,640,480);
-
+    // HUNG 
+#if DISPLAY_CAPTURE_IMG_FOR_DEBUG
+    captureImg.draw(0,0,320,240);
+    grayCaptureImg.draw(320,0,320,240);
+    grayDiff.draw(0,240,320,240);
+    contourFinder.draw(320,240,320,240);
 #endif
 
-#if 0
-	if (videoEnable) {
-		updatedMatrix = true;
-
-		pixelOutput.loadData(pixels, width, height, GL_RGBA);
-		glPushMatrix();
-		glMultMatrixf(resyncMatrix);
-		glTranslatef(0,0,0);
-		pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
-		glPopMatrix();
-	}
+#if 1 // HUNG WORKING DISPLAY omxplayer 
+    pixelOutput.loadData(pixels, width, height, GL_RGBA);
+    updatedMatrix = false;
+    glPushMatrix();
+    glMultMatrixf(resyncMatrix);
+    glTranslatef(0,0,0);
+    pixelOutput.draw(0, 0, 640, 480); 
+    glPopMatrix();
 #endif
 
 #endif // OMX_CAMERA
@@ -1021,9 +913,30 @@ void picoApp::draw(){
     pixelOutput.draw(0, 0, omxPlayer.getWidth(), omxPlayer.getHeight());
 #endif
 
-#if 0
+    /* FILL BLOBS */
+    int HOFFSET = 80;
+    int VOFFSET = 20;
+    int BLOBRADIUS = 10;
+
+    ofFill();
+    ofSetHexColor(0x000000);
+    ofRect(HOFFSET,0,2*VOFFSET,2*VOFFSET);
+    ofRect(WIDTH-HOFFSET-2*VOFFSET,0,2*VOFFSET,2*VOFFSET);
+    ofRect(HOFFSET,HEIGHT-2*VOFFSET,2*VOFFSET,2*VOFFSET);
+    ofRect(WIDTH-HOFFSET-2*VOFFSET,HEIGHT-2*VOFFSET,2*VOFFSET,2*VOFFSET);
+
+    ofSetHexColor(0xFFFFFF);
+    if (sendBlobsEnable == true) {
+	ofCircle(HOFFSET+VOFFSET,VOFFSET,BLOBRADIUS);  
+	ofCircle(WIDTH-HOFFSET-VOFFSET,VOFFSET,BLOBRADIUS);  
+	ofCircle(HOFFSET+VOFFSET,HEIGHT-VOFFSET,BLOBRADIUS);  
+	ofCircle(WIDTH-HOFFSET-VOFFSET,HEIGHT-VOFFSET,BLOBRADIUS);  
+    }
+    drawFrame ++;
+
+#if 1
     stringstream info;
-    info <<"\n" << "output frame rate: " << ofGetFrameRate() << "\n";
+    info <<"\n" << "output frame rate: " << ofGetFrameRate() << "drawFrame: " << drawFrame << "\n";
     info << "Player: " << omxPlayer.getWidth() << "x" << omxPlayer.getHeight() << " @ "<< omxPlayer.getFPS() << "fps"<< "\n";
     info << "Camera: " << captureVid.getWidth() << "x" << captureVid.getHeight() << " @ "<< captureVid.getFrameRate() << "fps"<< "\n";
     ofDrawBitmapStringHighlight(info.str(), 60, 60, ofColor(ofColor::black, 90), ofColor::green);
@@ -1049,6 +962,25 @@ void picoApp::draw(){
 
 void picoApp::keyPressed  (int key)
 {
+        // HUNG WORKING	
+	switch (key) {
+		case 'p':
+			printf("toggle pause, current pause = %d\n",omxPlayer.isPaused());
+			omxPlayer.togglePause();
+			// pauseFlag = ~pauseFlag;
+			// if (pauseFlag)
+				// omxPlayer.setPaused(!omxPlayer.isPaused());
+				// OMXClock::OMXPause(true);
+			// else
+				// omxPlayer.togglePaused();
+				// OMXClock::OMXResume(true);
+		break;
+	}
+
+
+
+
+
 #if	TEST_RESYNC_CAPTURE
 	switch (key) {
 		case ' ':

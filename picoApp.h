@@ -34,8 +34,6 @@ extern "C" {
 // #define TEST_RESYNC_HOMOGRAPHY				1
 // #define TEST_RESYNC_CAPTURE					1
 #define OMX_CAMERA							1
-// #define CAMERA_TO_TEXTURE					1 // test only: display video from camera to texture draw out
-#define CAMERA_TO_IMAGE						1     // test only: display video from camera to image draw out
 
 /* DEBUG/TEST SWITCH */
 #define DEBUG_HOMOGRAPHY               		1
@@ -100,8 +98,8 @@ static int myboardID;
 #define MIN_AREA		100  	// BLOB SIZE MIN DETECTION
 #define MAX_AREA   		2000 	// BLOB SIZE MAX DETECTION
 #define FRAME_RATE		30  	// RESYNC FRAME RATE
-#define CAPWIDTH		1280	// RESYNC CAPTURE WIDTH
-#define CAPHEIGHT		720 	// RESYNC CAPTURE HEIGHT
+#define CAPWIDTH		640		// RESYNC CAPTURE WIDTH
+#define CAPHEIGHT		480 	// RESYNC CAPTURE HEIGHT
 
 class picoApp : public ofBaseApp, public SSHKeyListener{
 	
@@ -201,8 +199,9 @@ public:
 	int nClick;
 	int setPositionByMouse;
 	int nFrame;
+	int drawFrame;
 	int nPos;
-
+	bool pauseFlag;
 	bool sendBlobsEnable;
 
 	bool videoEnable;
