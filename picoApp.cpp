@@ -271,7 +271,9 @@ void picoApp::update()
     	grayDiff.threshold(80);
     	contourFinder.findContours(grayDiff, MIN_AREA, MAX_AREA, 20, false);
     	if (contourFinder.nBlobs) {
-    	     ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    	    // ofLog(OF_LOG_NOTICE, "found %d blobs in frame %d", contourFinder.nBlobs, nFrame);
+    		// HUNG
+    		bUpdateBlobs = true;
     	}
     	grayCaptureImgSaved = grayCaptureImg;
     	nFrame ++;
@@ -755,58 +757,67 @@ void picoApp::draw(){
 	int blobPosX[8];
     int blobPosY[8];
 
-    for (i=0; i < contourFinder.nBlobs; i++) {
-    	int blobX = contourFinder.blobs[i].centroid.x;
-    	int blobY = contourFinder.blobs[i].centroid.y;
-    	int blobA = contourFinder.blobs[i].area;
-    	ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
-    	blobPosX[i] = blobX;
-    	blobPosY[i] = blobY;
-    }
+    if (bUpdateBlobs) {
+    	bUpdateBlobs = false;
 
-    if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
-    	updateMatrix = true;
-    	for (i=0; i < 8; i++) {
-    		if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
-    	    	printf("\n>>>>> blobPos are invalid...skip updating");
-    	    	updateMatrix = false;
-    	    	break;
-    	    }
+    	printf("frame[%d]: ")
+    	for (i=0; i < contourFinder.nBlobs; i++) {
+    		int blobX = contourFinder.blobs[i].centroid.x;
+    		int blobY = contourFinder.blobs[i].centroid.y;
+    		int blobA = contourFinder.blobs[i].area;
+    		printf("(%d %d)", blobX,blobY);
+    		// ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+    		blobPosX[i] = blobX;
+    		blobPosY[i] = blobY;
     	}
-    	for (i=0; i<8; i++) {
-            for (j=i+1; j<8; j++) {
-                if (blobPosX[i]>blobPosX[j]) {
-                    varx = blobPosX[i];
-                    vary = blobPosY[i];
-                    blobPosX[i] = blobPosX[j];
-                    blobPosY[i] = blobPosY[j];
-                    blobPosX[j] = varx;
-                    blobPosY[j] = vary;
-                }
-            }
-    	}
-    	for (i=0; i<8; i+=2) {
-    		if (blobPosY[i] > blobPosY[i+1]) {
-    			varx = blobPosX[i];
-    			vary = blobPosY[i];
-    			blobPosX[i] = blobPosX[i+1];
-    			blobPosY[i] = blobPosY[i+1];
-    			blobPosX[i+1] = varx;
-    			blobPosY[i+1] = vary;
+    	printf("\n");
+
+    	if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
+    		updateMatrix = true;
+    		for (i=0; i < 8; i++) {
+    			if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
+    				printf("\n>>>>> blobPos are invalid...skip updating");
+    				updateMatrix = false;
+    				break;
+    			}
     		}
+    		for (i=0; i<8; i++) {
+    			for (j=i+1; j<8; j++) {
+    				if (blobPosX[i]>blobPosX[j]) {
+    					varx = blobPosX[i];
+    					vary = blobPosY[i];
+    					blobPosX[i] = blobPosX[j];
+    					blobPosY[i] = blobPosY[j];
+    					blobPosX[j] = varx;
+    					blobPosY[j] = vary;
+    				}
+    			}
+    		}
+
+    		for (i=0; i<8; i+=2) {
+    			if (blobPosY[i] > blobPosY[i+1]) {
+    				varx = blobPosX[i];
+    				vary = blobPosY[i];
+    				blobPosX[i] = blobPosX[i+1];
+    				blobPosY[i] = blobPosY[i+1];
+    				blobPosX[i+1] = varx;
+    				blobPosY[i+1] = vary;
+    			}
+    		}
+
+    		/* getMatrixDistance to determine updating the homography matrix */
+    		float distance = 0.0;
+    		for (i=0; i<8; i++) {
+    			blobPos[i].x = blobPosX[i];
+    			blobPos[i].y = blobPosY[i];
+    			distance += blobPos[i].squareDistance(blobPosSaved[i]);
+    			blobPosSaved[i] = blobPos[i];
+    		}
+    		printf("total distance: %5.2f", distance);
     	}
-    	/* getMatrixDistance to determine updating the homography matrix */
-    	float distance = 0.0;
-    	for (i=0; i<8; i++) {
-    		blobPos[i].x = blobPosX[i];
-    	    blobPos[i].y = blobPosY[i];
-    	    distance += blobPos[i].squareDistance(blobPosSaved[i]);
-    	    blobPosSaved[i] = blobPos[i];
+    	else {
+    		updateMatrix = false;
     	}
-    	printf("total distance: %5.2f", distance);
-    }
-    else {
-      	updateMatrix = false;
     }
 
     if (nFrame == 50) {
