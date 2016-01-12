@@ -264,7 +264,7 @@ void picoApp::update()
     		// at least update the first time
     		grayCaptureImgSaved = grayCaptureImg;
     		bUpdateBackground = false;
-    		ofLog(OF_LOG_NOTICE, "update background first time");
+    		ofLog(OF_LOG_NOTICE, ">>>>> Update background the first time");
     	}
 
     	grayDiff.absDiff(grayCaptureImgSaved, grayCaptureImg);
@@ -889,9 +889,10 @@ void picoApp::draw(){
     grayDiff.draw(0,240,320,240);
     contourFinder.draw(320,240,320,240);
 #endif
-    // Display captureImg for debug
     // HUNG2
-    captureImg.draw(0,0,640,480);
+    // Display captureImg for debug
+    // captureImg.draw(0,0,640,480);
+    contourFinder.draw(0,0,640,480);
 
 #if 0 // WORKING DISPLAY omxplayer
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
@@ -934,7 +935,7 @@ void picoApp::draw(){
     }
     drawFrame ++;
 
-#if 1
+#if 0
     stringstream info;
     info <<"\n" << "output frame rate: " << ofGetFrameRate() << "drawFrame: " << drawFrame << "\n";
     info << "Player: " << omxPlayer.getWidth() << "x" << omxPlayer.getHeight() << " @ "<< omxPlayer.getFPS() << "fps"<< "\n";
