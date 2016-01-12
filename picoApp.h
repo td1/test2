@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxOMXPlayer.h"
-#include "ofxRPiCameraVideoGrabber.h"
+#include "ofxOMXCapture.h"
 #include "myID.h"
 #include "ConsoleListener.h"
 #include "ofxOpenCv.h"
@@ -136,8 +136,8 @@ public:
 	ofTexture 				pixelOutput;
         
 #if OMX_CAMERA
-	ofxRPiCameraVideoGrabber captureVid;
-	OMXCameraSettings 		omxCameraSettings;
+	ofxOMXCapture           captureVid;
+	OMXCaptureConfig    	captureConfig;
 	ofImage					grabImg;
 #endif
 

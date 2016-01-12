@@ -40,8 +40,9 @@ void picoApp::setup()
     
 #ifdef DEBUG_HOMOGRAPHY
 // videoPath = ofToDataPath("./testpattern.mp4", true);
-//HUNG videoPath = ofToDataPath("../../../video/grid_640x480.mp4", true);
-    videoPath = ofToDataPath("./Timecoded_Big_bunny_1.mov", true);
+    // HUNG1
+    videoPath = ofToDataPath("../../../video/grid_640x480.mp4", true);
+    // videoPath = ofToDataPath("./Timecoded_Big_bunny_1.mov", true);
 // #else
 // videoPath = ofToDataPath("./testvideo.mp4", true);
 #endif    
@@ -165,20 +166,17 @@ void picoApp::setup()
 #endif
 
 #if OMX_CAMERA
-    omxCameraSettings.width = CAPWIDTH;
-	omxCameraSettings.height = CAPHEIGHT;
-	omxCameraSettings.framerate = 30;
-	omxCameraSettings.isUsingTexture = true;
-	omxCameraSettings.enablePixels = true;
+    captureConfig.width = CAPWIDTH;
+    captureConfig.height = CAPHEIGHT;
+    captureConfig.framerate = 30;
+    captureConfig.isUsingTexture = true;
+    captureConfig.enablePixels = true;
 	
-// HUNG
-captureVid.setup(omxCameraSettings);
+    captureVid.setup(captureConfig);
 	if (!pixelOutput.isAllocated()) {
-	    // HUNG pixelOutput.allocate(omxCameraSettings.width, omxCameraSettings.height, GL_RGB); 
 	    pixelOutput.allocate(width, height, GL_RGBA); 
 	}
 	
-
     // grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR_ALPHA); // GL_RGBA
     grabImg.allocate(CAPWIDTH,CAPHEIGHT,OF_IMAGE_COLOR); // GL_RGB
 
@@ -259,8 +257,7 @@ void picoApp::update()
     		ofLog(OF_LOG_NOTICE, "save frame image %d", nFrame);
     	}*/
 
-        // HUNG
-	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
+    	captureImg.setFromPixels(captureVid.getPixels(), CAPWIDTH, CAPHEIGHT);
     	grayCaptureImg = captureImg;
 
     	if (bUpdateBackground == true) {
@@ -885,15 +882,18 @@ void picoApp::draw(){
 	glPopMatrix();
 	*/
 
-    // HUNG 
+
 #if DISPLAY_CAPTURE_IMG_FOR_DEBUG
     captureImg.draw(0,0,320,240);
     grayCaptureImg.draw(320,0,320,240);
     grayDiff.draw(0,240,320,240);
     contourFinder.draw(320,240,320,240);
 #endif
+    // Display captureImg for debug
+    // HUNG2
+    captureImg.draw(0,0,640,480);
 
-#if 1 // HUNG WORKING DISPLAY omxplayer 
+#if 0 // WORKING DISPLAY omxplayer
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
     updatedMatrix = false;
     glPushMatrix();
@@ -962,7 +962,6 @@ void picoApp::draw(){
 
 void picoApp::keyPressed  (int key)
 {
-        // HUNG WORKING	
 	switch (key) {
 		case 'p':
 			printf("toggle pause, current pause = %d\n",omxPlayer.isPaused());
