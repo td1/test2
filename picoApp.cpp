@@ -760,12 +760,12 @@ void picoApp::draw(){
     if (bUpdateBlobs) {
     	bUpdateBlobs = false;
 
-    	printf("frame[%d]: ")
+    	printf("frame[%d]: ");
     	for (i=0; i < contourFinder.nBlobs; i++) {
     		int blobX = contourFinder.blobs[i].centroid.x;
     		int blobY = contourFinder.blobs[i].centroid.y;
     		int blobA = contourFinder.blobs[i].area;
-    		printf("(%d %d)", blobX,blobY);
+    		printf("(%d %d) ", blobX,blobY);
     		// ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
     		blobPosX[i] = blobX;
     		blobPosY[i] = blobY;
