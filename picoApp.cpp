@@ -756,31 +756,32 @@ void picoApp::draw(){
     int vary = 0;
 	int blobPosX[8];
     int blobPosY[8];
+    int blobPosA[8];
 
     if (bUpdateBlobs) {
     	bUpdateBlobs = false;
 
-    	printf("frame[%d]: ");
+
     	for (i=0; i < contourFinder.nBlobs; i++) {
-    		int blobX = contourFinder.blobs[i].centroid.x;
-    		int blobY = contourFinder.blobs[i].centroid.y;
-    		int blobA = contourFinder.blobs[i].area;
-    		printf("(%d %d) ", blobX,blobY);
+    		blobPosX[i] = contourFinder.blobs[i].centroid.x;
+    		blobPosY[i]  = contourFinder.blobs[i].centroid.y;
+    		blobPosA[i]  = contourFinder.blobs[i].area;
     		// ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
-    		blobPosX[i] = blobX;
-    		blobPosY[i] = blobY;
     	}
-    	printf("\n");
+
 
     	if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
     		updateMatrix = true;
+    		printf("\nframe[%d]: ");
     		for (i=0; i < 8; i++) {
+    			printf("(%d %d %d) ",blobPosX[i],blobPosY[i],blobPosA[i]);
     			if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
-    				printf("\n>>>>> blobPos are invalid...skip updating");
     				updateMatrix = false;
+    				printf("\n>>>>> blobPos are invalid...updateMatrix = %d\n");
     				break;
     			}
     		}
+    		printf("\n");
     		for (i=0; i<8; i++) {
     			for (j=i+1; j<8; j++) {
     				if (blobPosX[i]>blobPosX[j]) {
@@ -813,7 +814,7 @@ void picoApp::draw(){
     			distance += blobPos[i].squareDistance(blobPosSaved[i]);
     			blobPosSaved[i] = blobPos[i];
     		}
-    		printf("total distance: %5.2f", distance);
+    		printf("distance: %5.2f\n", distance);
     	}
     	else {
     		updateMatrix = false;
@@ -903,7 +904,7 @@ void picoApp::draw(){
     // HUNG2
     // Display captureImg for debug
     // captureImg.draw(0,0,640,480);
-    contourFinder.draw(0,0,640,480);
+    // contourFinder.draw(0,0,640,480);
 
 #if 0 // WORKING DISPLAY omxplayer
     pixelOutput.loadData(pixels, width, height, GL_RGBA);
