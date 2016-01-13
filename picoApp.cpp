@@ -757,31 +757,38 @@ void picoApp::draw(){
 	int blobPosX[8];
     int blobPosY[8];
     int blobPosA[8];
+    int nBlobs = contourFinder.nBlobs;
 
     if (bUpdateBlobs) {
     	bUpdateBlobs = false;
 
-
-    	for (i=0; i < contourFinder.nBlobs; i++) {
-    		blobPosX[i] = contourFinder.blobs[i].centroid.x;
-    		blobPosY[i]  = contourFinder.blobs[i].centroid.y;
-    		blobPosA[i]  = contourFinder.blobs[i].area;
-    		// ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
-    	}
-
-
-    	if ( (contourFinder.nBlobs == 8 || contourFinder.nBlobs == 4) && updatedMatrix == false)  {
+    	// if ( (nBlobs == 8 || nBlobs == 4) && updatedMatrix == false)  {
+    	if (nBlobs == 8)  {
     		updateMatrix = true;
-    		printf("\nframe[%d]: ");
-    		for (i=0; i < 8; i++) {
-    			printf("(%d %d %d) ",blobPosX[i],blobPosY[i],blobPosA[i]);
+
+    		for (i=0; i < nBlobs; i++) {
+    		    blobPosX[i] = contourFinder.blobs[i].centroid.x;
+    		    blobPosY[i]  = contourFinder.blobs[i].centroid.y;
+    		    blobPosA[i]  = contourFinder.blobs[i].area;
+    		    // ofLog(OF_LOG_NOTICE, "blob[%d] = (%i,%i,%i)", i, blobX, blobY, blobA);
+    		}
+
+    		for (i=0; i < nBlobs; i++) {
     			if (blobPosX[i] < 0 || blobPosY[i] < 0 || blobPosX[i] > 2000 || blobPosY[i] > 2000) {
     				updateMatrix = false;
-    				printf("\n>>>>> blobPos are invalid...updateMatrix = %d\n");
+    				// printf("\n>>>>> blobPos are invalid...updateMatrix = %d\n");
     				break;
     			}
     		}
-    		printf("\n");
+
+    		if (updateMatrix == true) {
+    			printf("\nframe[%d]:", nFrame);
+    			for (i=0; i < nBlobs; i++) {
+    				printf("(%d %d %d)",blobPosX[i],blobPosY[i],blobPosA[i]);
+    			}
+    			printf("\n");
+    		}
+
     		for (i=0; i<8; i++) {
     			for (j=i+1; j<8; j++) {
     				if (blobPosX[i]>blobPosX[j]) {
@@ -808,13 +815,20 @@ void picoApp::draw(){
 
     		/* getMatrixDistance to determine updating the homography matrix */
     		float distance = 0.0;
-    		for (i=0; i<8; i++) {
+    		for (i=0; i<nBlobs; i++) {
     			blobPos[i].x = blobPosX[i];
     			blobPos[i].y = blobPosY[i];
     			distance += blobPos[i].squareDistance(blobPosSaved[i]);
-    			blobPosSaved[i] = blobPos[i];
     		}
-    		printf("distance: %5.2f\n", distance);
+
+    		if (distance < 1000 && updateMatrix == true) {
+    			printf("distance: %5.2f\n", distance);
+    			for (i=0; i<nBlobs; i++)
+    				blobPosSaved[i] = blobPos[i];
+    		}
+    		else {
+    			updateMatrix = false;
+       		}
     	}
     	else {
     		updateMatrix = false;
@@ -840,18 +854,27 @@ void picoApp::draw(){
 				src[2].set(560,40);
 				src[3].set(560,440);
 
-				dst[0].set(blobPosX[0],blobPosY[0]);
-				dst[1].set(blobPosX[1],blobPosY[1]);
-				dst[2].set(blobPosX[2],blobPosY[2]);
-				dst[3].set(blobPosX[3],blobPosY[3]);
+				// HUNG HERE
+//				dst[0].set(blobPosX[0],blobPosY[0]);
+//				dst[1].set(blobPosX[1],blobPosY[1]);
+//				dst[2].set(blobPosX[2],blobPosY[2]);
+//				dst[3].set(blobPosX[3],blobPosY[3]);
+				dst[0].set(blobPosSaved[0].x,blobPosSaved[0].y);
+				dst[1].set(blobPosSaved[1].x,blobPosSaved[1].y);
+				dst[2].set(blobPosSaved[2].x,blobPosSaved[2].y);
+				dst[3].set(blobPosSaved[3].x,blobPosSaved[3].y);
 
 				ofh1 = getResyncHomography3x3(src,dst);
 				ofh1inv = getResyncHomography3x3(dst,src);
 
-				dst[0].set(blobPosX[4],blobPosY[4]);
-				dst[1].set(blobPosX[5],blobPosY[5]);
-				dst[2].set(blobPosX[6],blobPosY[6]);
-				dst[3].set(blobPosX[7],blobPosY[7]);
+//				dst[0].set(blobPosX[4],blobPosY[4]);
+//				dst[1].set(blobPosX[5],blobPosY[5]);
+//				dst[2].set(blobPosX[6],blobPosY[6]);
+//				dst[3].set(blobPosX[7],blobPosY[7]);
+				dst[0].set(blobPosSaved[4].x,blobPosSaved[4].y);
+				dst[1].set(blobPosSaved[5].x,blobPosSaved[5].y);
+				dst[2].set(blobPosSaved[6].x,blobPosSaved[6].y);
+				dst[3].set(blobPosSaved[7].x,blobPosSaved[7].y);
 
 				ofh2 = getResyncHomography3x3(src,dst);
 				ofh2inv = getResyncHomography3x3(dst,src);
